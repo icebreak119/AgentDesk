@@ -33,10 +33,20 @@ AgentDesk 围绕「私域客服会话处置」完成 8 步企业级闭环：
 
 ### 2.3 上下文传递
 
-- TaskContext 字段：
-  - task_id, profile_id, session_id, channel
-  - triage_result, reply_draft, send_receipt, verify_result
-- 传递方式：SessionTL 在各 Worker 间组装共享上下文
+TaskContext 示例：
+
+```json
+{
+  "task_id": "task_20260726_001",
+  "profile_id": "dy_account_01",
+  "session_id": "sess_abc",
+  "channel": "douyin",
+  "triage_result": {"intent": "consult", "priority": "low", "need_approval": false},
+  "reply_draft": {"draft_text": "您好，价格请参考..."},
+  "send_receipt": {"status": "ok", "send_id": "msg_123"},
+  "verify_result": {"pass": true, "evidence_ref": "log://verify/001"}
+}
+```
 
 ### 2.4 工具调用
 
@@ -52,9 +62,12 @@ AgentDesk 围绕「私域客服会话处置」完成 8 步企业级闭环：
 
 ### 2.6 执行证据沉淀
 
-- 日志：profile_id + task_id + 分支关键字
-- 证据：send_receipt、verify screenshot/log、审批记录
-- 可观测：Trace 串联 agent → skill → tool
+| 证据类型 | 内容 | 用途 |
+|---|---|---|
+| Log | profile_id + task_id + 分支关键字 | 故障定位 |
+| Trace | agent → skill → tool 链路 | 协同审计 |
+| Receipt | 渠道发送回执 | 执行证明 |
+| Verify | expected/actual 对比 | 结果可信 |
 
 ### 2.7 审批与回滚
 
@@ -92,9 +105,19 @@ AgentDesk 围绕「私域客服会话处置」完成 8 步企业级闭环：
 
 ## 4. 上下文能力（满足赛道 4 选 2）
 
-已实现/设计项：
+| 能力 | 状态 | 说明 |
+|---|---|---|
+| 共享状态管理 | ✅ 已实现设计 | TaskContext + 会话状态机 |
+| 轨迹可观测 | ✅ 已实现设计 | Trace/Log 按 task_id 串联 |
+| 知识库 RAG | 🔄 复赛 | FAQ + 历史案例检索 |
+| Agent 记忆存储 | 🔄 复赛 | 客户会话短期记忆 |
 
-1. **共享状态管理**：TaskContext + 会话状态机
-2. **轨迹可观测**：Trace/Log 按 task_id 串联
-3. （复赛）**知识库 RAG**：FAQ + 历史案例检索
-4. （复赛）**Agent 记忆存储**：客户会话短期记忆
+## 5. 评审维度对齐
+
+| 评审维度（25%） | AgentDesk 对应材料 |
+|---|---|
+| 场景价值与可复制性 | 私域客服通用痛点 + 抖音/企微真实场景 |
+| 多 Agent 协同与闭环 | 5 Agent + 8 步闭环 + 审批回滚 |
+| Skill 工程与生态复用 | 5 Skill + Schema + 版本策略 |
+| 工程落地与安全审计 | profile 隔离、核验、证据、MCP 契约 |
+| 开源贡献 | GitHub 仓库 + 可复用模板 |
