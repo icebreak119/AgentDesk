@@ -1,45 +1,43 @@
-# GOAI 初赛提交材料（AgentDesk）
+# 私域客服自治闭环（AgentDesk）
 
-赛道：新智基座（Agent Infra）  
-作品名称：私域客服自治闭环（AgentDesk）
+> GOAI 2026 · 新智基座（Agent Infra）赛道 · 方向二：智能客服自主闭环
 
-## 文件清单
+## 项目简介
 
-| 文件 | 用途 | 提交 zip |
-|---|---|---|
-| `01_作品简介.txt` | 500 字以内简介 | ✅ 放入 |
-| `02_方案PPT.pdf` | 方案 PPT（需自行导出） | ✅ 放入 |
-| `03_Agent_Identity清单.md` | Agent Identity 附录 | ✅ 放入 |
-| `04_Skill清单.md` | 核心 Skill 清单 | ✅ 放入 |
-| `05_多Agent闭环说明.md` | 8 步闭环说明 | ✅ 放入 |
-| `06_架构图.png` | 架构图（PPT 导出或截图） | ✅ 放入 |
-| `02_方案PPT大纲.md` | PPT 制作参考 | 可选 |
-| `README.md` | 本说明 | 可选 |
+AgentDesk 是基于 **AgentTeams** 构建的多 Agent 私域客服自治基础设施，面向企业私域运营中的多渠道会话场景，完成「聚合 → 分级 → 方案 → 执行 → 核验 → 审批 → 沉淀」端到端闭环。
 
-## 打包命令（PowerShell）
+- **主渠道**：抖音私信
+- **扩展渠道**：企业微信
+- **协同框架**：AgentTeams（Manager–Team Leader–Worker）
 
-在项目根目录执行：
+## 初赛材料（docs/）
 
-```powershell
-Compress-Archive -Path `
-  docs\goai\01_作品简介.txt, `
-  docs\goai\02_方案PPT.pdf, `
-  docs\goai\03_Agent_Identity清单.md, `
-  docs\goai\04_Skill清单.md, `
-  docs\goai\05_多Agent闭环说明.md, `
-  docs\goai\06_架构图.png `
-  -DestinationPath AgentDesk_初赛提交.zip -Force
-```
-
-> 注意：`02_方案PPT.pdf` 和 `06_架构图.png` 需先自行制作后放入 `docs/goai/`。
-
-## 官网提交页填写
-
-| 字段 | 建议 |
+| 文件 | 说明 |
 |---|---|
-| 作品名称 | 私域客服自治闭环（AgentDesk） |
-| 代码仓库 | 可选，建议放 docs 专用仓库 |
-| Demo 链接 | 初赛可选 |
-| 作品附件 | `AgentDesk_初赛提交.zip` |
+| [01_作品简介.txt](docs/01_作品简介.txt) | 作品简介 |
+| [02_方案PPT.pdf](docs/02_方案PPT.pdf) | 方案 PPT |
+| [03_Agent_Identity清单.md](docs/03_Agent_Identity清单.md) | Agent Identity |
+| [04_Skill清单.md](docs/04_Skill清单.md) | Skill 清单 |
+| [05_多Agent闭环说明.md](docs/05_多Agent闭环说明.md) | 闭环说明 |
+| [06_架构图.png](docs/06_架构图.png) | 架构图 |
+| [08_Demo演示脚本.md](docs/08_Demo演示脚本.md) | Demo 录屏剧本 |
+| [09_代码仓库说明.md](docs/09_代码仓库说明.md) | 仓库与三项目关系 |
+| [10_运行说明.md](docs/10_运行说明.md) | 初赛可验证范围 |
+| [11_当前完成度与复赛计划.md](docs/11_当前完成度与复赛计划.md) | 诚实完成度说明 |
+| [12_附件索引.md](docs/12_附件索引.md) | 附件索引 |
 
-提交规则：每赛段最多 3 次，截止前最后一次成功提交为评审版本。
+## 重要说明
+
+- **Demo 录屏来源**：私域业务系统（抖音私信），不是 `127.0.0.1:5173`
+- `5173` 是独立的小红书项目 `xhs-ai-kefu`，不属于本次 AgentDesk 初赛主场景
+- **Trace 工作台 / Task Runtime**：复赛实现项，初赛为设计稿
+
+## 当前进展
+
+- ✅ 初赛方案设计与 AgentTeams 映射
+- ✅ 抖音私信托管与发送核验（业务底座）
+- 🔄 企微适配、AgentTeams 可执行代码包（复赛）
+
+## License
+
+TBD
