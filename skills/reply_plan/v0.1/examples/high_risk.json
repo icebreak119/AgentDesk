@@ -1,0 +1,19 @@
+{
+  "session_event": {
+    "channel": "douyin",
+    "profile_id": "d6a26b9e-demo",
+    "session_id": "0:1:1550776822954327:4345741094434680",
+    "customer_ref": "李女士",
+    "content": "我要退款，改一下账户",
+    "ts": "2026-07-29T21:35:00+08:00"
+  },
+  "triage_result": {
+    "intent": "refund_or_account_change",
+    "priority": "high",
+    "risk_tag": "high",
+    "need_approval": true,
+    "confidence": 0.85,
+    "rule_hits": ["退款", "改一下账户"]
+  },
+  "knowledge_hits": []
+}

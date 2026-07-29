@@ -1,0 +1,33 @@
+{
+  "skill": "ReplyPlan",
+  "version": "0.1",
+  "input": {
+    "type": "object",
+    "required": ["session_event", "triage_result"],
+    "properties": {
+      "session_event": { "type": "object" },
+      "triage_result": { "type": "object" },
+      "knowledge_hits": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ref": { "type": "string" },
+            "snippet": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["draft_text", "action_type", "risk_tag", "citations"],
+    "properties": {
+      "draft_text": { "type": "string" },
+      "action_type": { "type": "string", "enum": ["reply", "escalate"] },
+      "risk_tag": { "type": "string" },
+      "citations": { "type": "array", "items": { "type": "string" } },
+      "approval_token": { "type": ["string", "null"] }
+    }
+  }
+}

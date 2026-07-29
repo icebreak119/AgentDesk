@@ -1,0 +1,38 @@
+{
+  "skill": "IntentTriage",
+  "version": "0.1",
+  "input": {
+    "type": "object",
+    "required": ["session_event"],
+    "properties": {
+      "session_event": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "channel": { "type": "string" },
+          "profile_id": { "type": "string" },
+          "session_id": { "type": "string" },
+          "customer_ref": { "type": "string" },
+          "content": { "type": "string" },
+          "ts": { "type": "string" }
+        }
+      },
+      "history": {
+        "type": "array",
+        "items": { "type": "object" }
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["intent", "priority", "risk_tag", "need_approval", "confidence"],
+    "properties": {
+      "intent": { "type": "string" },
+      "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+      "risk_tag": { "type": "string", "enum": ["low", "medium", "high"] },
+      "need_approval": { "type": "boolean" },
+      "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+      "rule_hits": { "type": "array", "items": { "type": "string" } }
+    }
+  }
+}

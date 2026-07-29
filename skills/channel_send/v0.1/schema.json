@@ -1,0 +1,26 @@
+{
+  "skill": "ChannelSend",
+  "version": "0.1",
+  "contract_ref": "docs/contracts/channel.send_message.json",
+  "input": {
+    "type": "object",
+    "required": ["channel", "profile_id", "session_ref", "content", "idempotency_key"],
+    "properties": {
+      "channel": { "type": "string" },
+      "profile_id": { "type": "string" },
+      "session_ref": { "type": "string" },
+      "content": { "type": "string" },
+      "idempotency_key": { "type": "string" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["send_id", "status", "ts"],
+    "properties": {
+      "send_id": { "type": "string" },
+      "status": { "type": "string", "enum": ["ok", "failed"] },
+      "receipt_raw": { "type": "object" },
+      "ts": { "type": "string" }
+    }
+  }
+}

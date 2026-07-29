@@ -1,0 +1,20 @@
+{
+  "session_event": {
+    "channel": "douyin",
+    "profile_id": "d6a26b9e-demo",
+    "session_id": "0:1:1550776822954327:4345741094434680",
+    "customer_ref": "张先生",
+    "content": "在吗，想了解价格",
+    "ts": "2026-07-29T21:30:00+08:00"
+  },
+  "triage_result": {
+    "intent": "consult",
+    "priority": "low",
+    "risk_tag": "low",
+    "need_approval": false,
+    "confidence": 0.7
+  },
+  "knowledge_hits": [
+    { "ref": "faq://pricing/001", "snippet": "标准版 1999/年" }
+  ]
+}

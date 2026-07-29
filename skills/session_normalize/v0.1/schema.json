@@ -1,0 +1,25 @@
+{
+  "skill": "SessionNormalize",
+  "version": "0.1",
+  "input": {
+    "type": "object",
+    "required": ["channel", "profile_id", "raw_event"],
+    "properties": {
+      "channel": { "type": "string", "enum": ["douyin", "qywx"] },
+      "profile_id": { "type": "string" },
+      "raw_event": { "type": "object" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["session_id", "customer_ref", "content", "content_type", "ts", "dedupe_key"],
+    "properties": {
+      "session_id": { "type": "string" },
+      "customer_ref": { "type": "string" },
+      "content": { "type": "string" },
+      "content_type": { "type": "string" },
+      "ts": { "type": "string" },
+      "dedupe_key": { "type": "string" }
+    }
+  }
+}

@@ -1,0 +1,64 @@
+version: "0.1.0"
+description: AgentDesk Skill 注册表（初赛参考实现）
+
+skills:
+  session_normalize:
+    display_name: SessionNormalize
+    version: "0.1"
+    entrypoint: null
+    schema: session_normalize/v0.1/schema.json
+    examples:
+      - session_normalize/v0.1/examples/douyin_inbound.json
+    caller_agents:
+      - agent.channel_ingress
+    implementation: runtime 适配层（Phase 3 orchestrator 调用）
+    runnable: false
+
+  intent_triage:
+    display_name: IntentTriage
+    version: "0.1"
+    entrypoint: intent_triage/v0.1/skill.py
+    schema: intent_triage/v0.1/schema.json
+    examples:
+      - intent_triage/v0.1/examples/consult.json
+      - intent_triage/v0.1/examples/refund.json
+    caller_agents:
+      - agent.triage_guard
+    runnable: true
+
+  reply_plan:
+    display_name: ReplyPlan
+    version: "0.1"
+    entrypoint: reply_plan/v0.1/skill.py
+    schema: reply_plan/v0.1/schema.json
+    examples:
+      - reply_plan/v0.1/examples/consult.json
+      - reply_plan/v0.1/examples/high_risk.json
+    caller_agents:
+      - agent.triage_guard
+    runnable: true
+
+  channel_send:
+    display_name: ChannelSend
+    version: "0.1"
+    entrypoint: null
+    schema: channel_send/v0.1/schema.json
+    contract: docs/contracts/channel.send_message.json
+    examples:
+      - channel_send/v0.1/examples/send_text.json
+    caller_agents:
+      - agent.act_verify
+    implementation: runtime/douyin HTTP POST /accounts/{code}/send/text
+    runnable: false
+
+  outcome_verify:
+    display_name: OutcomeVerify
+    version: "0.1"
+    entrypoint: null
+    schema: outcome_verify/v0.1/schema.json
+    examples:
+      - outcome_verify/v0.1/examples/verify_ok.json
+    caller_agents:
+      - agent.act_verify
+    implementation: runtime/douyin 回执 + DOM 二次校验
+    runnable: false

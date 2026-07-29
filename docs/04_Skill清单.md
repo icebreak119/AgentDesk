@@ -1,14 +1,17 @@
 # AgentDesk 核心 Skill 清单
 
+> **注册表（可执行索引）**：[`skills/registry.yaml`](../skills/registry.yaml)  
+> **CLI 样例**：`python skills/run_skill.py intent_triage -i skills/intent_triage/v0.1/examples/consult.json`
+
 ## Skill 总览
 
-| Skill | 版本 | 用途 | 调用 Agent | 复用价值 |
-|---|---|---|---|---|
-| SessionNormalize | v0.1 | 多渠道会话归一 | ChannelIngress | 换渠道只换适配器 |
-| IntentTriage | v0.1 | 意图识别与分级 | TriageGuard | 规则+模型可复用 |
-| ReplyPlan | v0.1 | 回复/处置方案生成 | TriageGuard | 知识增强、风险标签 |
-| ChannelSend | v0.1 | 渠道消息发送 | ActVerify | 幂等、防串号 |
-| OutcomeVerify | v0.1 | 结果核验与证据 | ActVerify | 生产级可审计 |
+| Skill | 版本 | 用途 | 调用 Agent | 包路径 | 复用价值 |
+|---|---|---|---|---|---|
+| SessionNormalize | v0.1 | 多渠道会话归一 | ChannelIngress | `skills/session_normalize/v0.1/` | 换渠道只换适配器 |
+| IntentTriage | v0.1 | 意图识别与分级 | TriageGuard | `skills/intent_triage/v0.1/` ✅ 可运行 | 规则+模型可复用 |
+| ReplyPlan | v0.1 | 回复/处置方案生成 | TriageGuard | `skills/reply_plan/v0.1/` ✅ 可运行 | 知识增强、风险标签 |
+| ChannelSend | v0.1 | 渠道消息发送 | ActVerify | `skills/channel_send/v0.1/` + runtime | 幂等、防串号 |
+| OutcomeVerify | v0.1 | 结果核验与证据 | ActVerify | `skills/outcome_verify/v0.1/` + runtime | 生产级可审计 |
 
 ---
 
