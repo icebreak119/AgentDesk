@@ -20,7 +20,7 @@ REPO_ROOT = ROOT.parent.parent
 OUT = ROOT / "07_系统截图"
 LOG_DIR = REPO_ROOT / "logs"
 ARCH = ROOT / "06_架构图.png"
-RUNTIME_DOCS_URL = "http://127.0.0.1:8765/docs"
+RUNTIME_CONSOLE_URL = "http://127.0.0.1:8765/console"
 FOOTER = "来源：AgentDesk 抖音 Channel Runtime 日志（已打码）· 初赛工程证据"
 
 plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Consolas", "DejaVu Sans Mono"]
@@ -153,8 +153,8 @@ def try_start_runtime_server() -> subprocess.Popen | None:
         stderr=subprocess.DEVNULL,
     )
     for _ in range(20):
-        if http_ok(RUNTIME_DOCS_URL):
-            print("runtime server ready at", RUNTIME_DOCS_URL)
+        if http_ok(RUNTIME_CONSOLE_URL):
+            print("runtime server ready at", RUNTIME_CONSOLE_URL)
             return proc
         time.sleep(0.5)
     proc.terminate()
@@ -163,28 +163,168 @@ def try_start_runtime_server() -> subprocess.Popen | None:
 
 
 def capture_runtime_docs(out_path: Path) -> bool:
+    return capture_console_suite(OUT).get(out_path.name, False)
+
+
+def capture_console_suite(out_dir: Path) -> dict[str, bool]:
+    """Capture multiple real /console screenshots for submission."""
+    results: dict[str, bool] = {}
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        print("playwright not installed, skip /docs capture")
-        return False
+        print("playwright not installed, skip console capture")
+        return results
 
-    if not http_ok(RUNTIME_DOCS_URL):
-        print("runtime /docs not reachable")
-        return False
+    if not http_ok(RUNTIME_CONSOLE_URL):
+        print("runtime /console not reachable")
+        return results
+
+    def _shot_page(filename: str, *, min_size: int = 20_000, full_page: bool = False, clip: dict | None = None) -> None:
+        out_path = out_dir / filename
+        try:
+            page.screenshot(path=str(out_path), full_page=full_page, clip=clip)
+            ok = out_path.is_file() and out_path.stat().st_size >= min_size
+            results[filename] = ok
+            if ok:
+                print("captured console ->", filename)
+            else:
+                print("capture too small:", filename)
+        except Exception as exc:
+            print("capture failed", filename, exc)
+            results[filename] = False
+
+    def _shot(locator, filename: str, *, min_size: int = 20_000) -> None:
+        path = out_dir / filename
+        try:
+            locator.screenshot(path=str(path))
+            ok = path.is_file() and path.stat().st_size >= min_size
+            results[filename] = ok
+            if ok:
+                print("captured console ->", filename)
+            else:
+                print("capture too small:", filename)
+        except Exception as exc:
+            print("capture failed", filename, exc)
+            results[filename] = False
+
+    def _panel_clip(*labels: str, include_hero: bool = False) -> dict[str, float] | None:
+        boxes = []
+        if include_hero:
+            hero = page.locator("header.hero").bounding_box()
+            if hero:
+                boxes.append(hero)
+        for label in labels:
+            panel = page.locator("section.panel").filter(has_text=label).first
+            if panel.count():
+                box = panel.bounding_box()
+                if box:
+                    boxes.append(box)
+        if not boxes:
+            return None
+        y = min(b["y"] for b in boxes)
+        bottom = max(b["y"] + b["height"] for b in boxes)
+        return {"x": 0.0, "y": y, "width": 1440.0, "height": min(bottom - y + 20.0, 2200.0)}
 
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page(viewport={"width": 1440, "height": 900})
-            page.goto(RUNTIME_DOCS_URL, wait_until="networkidle", timeout=20000)
-            page.wait_for_timeout(800)
-            page.screenshot(path=str(out_path), full_page=False)
+            page.goto(RUNTIME_CONSOLE_URL, wait_until="networkidle", timeout=30000)
+            page.wait_for_selector(
+                "#account-list .account-item, #account-list .empty",
+                timeout=15000,
+            )
+            page.wait_for_timeout(1200)
+
+            account_panel = page.locator("section.panel").nth(0)
+            _shot(account_panel, "01_账号接入页.png")
+
+            select_btn = page.locator('button[data-action="select"]').first
+            if select_btn.count():
+                select_btn.click()
+                page.wait_for_timeout(400)
+
+            reload_btn = page.locator("#btn-reload-conversations")
+            if reload_btn.count():
+                reload_btn.click()
+            page.wait_for_selector(
+                "#conversation-list .conversation-item, #conversation-list .empty",
+                timeout=15000,
+            )
+            page.wait_for_timeout(1800)
+
+            clip = _panel_clip("账号托管", "发送文本私信", "私信会话", include_hero=True)
+            if not clip:
+                hero = page.locator("header.hero").bounding_box()
+                conv = page.locator("section.panel").filter(has_text="私信会话").first.bounding_box()
+                if hero and conv:
+                    y = max(0.0, hero["y"])
+                    clip = {
+                        "x": 0.0,
+                        "y": y,
+                        "width": 1440.0,
+                        "height": min((conv["y"] + conv["height"] - y) + 24.0, 2200.0),
+                    }
+            if clip:
+                _shot_page("02_会话工作台.png", clip=clip, min_size=35_000)
+            else:
+                page.screenshot(path=str(out_dir / "02_会话工作台.png"), full_page=True)
+                out = out_dir / "02_会话工作台.png"
+                results["02_会话工作台.png"] = out.is_file() and out.stat().st_size >= 35_000
+                if results["02_会话工作台.png"]:
+                    print("captured console -> 02_会话工作台.png (full page)")
+
+            conv_item = page.locator("#conversation-list .conversation-item").first
+            if conv_item.count():
+                conv_item.click()
+                page.wait_for_timeout(600)
+
+            send_clip = _panel_clip("发送文本私信", "私信会话")
+            if send_clip:
+                _shot_page("04_高风险审批任务.png", clip=send_clip, min_size=30_000)
+            else:
+                send_panel = page.locator("section.panel").filter(has_text="发送文本私信")
+                _shot(send_panel.first, "04_高风险审批任务.png")
+
+            page.evaluate(
+                """
+                async () => {
+                  const log = document.getElementById('result-log');
+                  const code = document.getElementById('account-select')?.value;
+                  if (!log || !code) return;
+                  const stamp = new Date().toLocaleString('zh-CN', { hour12: false });
+                  try {
+                    const res = await fetch(`/accounts/${encodeURIComponent(code)}/refresh_profiles`, { method: 'POST' });
+                    const data = await res.json();
+                    log.textContent = `[${stamp}] 资料同步 / 状态核验\\n` + JSON.stringify(data, null, 2);
+                  } catch (err) {
+                    log.textContent = `[${stamp}] 资料同步失败\\n` + String(err?.message || err);
+                  }
+                }
+                """
+            )
+            page.wait_for_timeout(1800)
+
+            result_panel = page.locator("section.panel").filter(has_text="调用结果")
+            result_panel.scroll_into_view_if_needed()
+            page.wait_for_timeout(400)
+            _shot(result_panel.first, "05_核验失败任务.png", min_size=15_000)
+
             browser.close()
-        return out_path.is_file() and out_path.stat().st_size > 30_000
     except Exception as exc:
-        print("docs capture failed:", exc)
-        return False
+        print("console suite capture failed:", exc)
+
+    return results
+
+
+def build_architecture() -> None:
+    script = ROOT / "build_arch_diagram.py"
+    if not script.is_file():
+        print("warning: missing", script)
+        return
+    import runpy
+
+    runpy.run_path(str(script), run_name="__main__")
 
 
 def build() -> None:
@@ -194,10 +334,9 @@ def build() -> None:
         print("warning: no log files under", LOG_DIR)
 
     server_proc = try_start_runtime_server()
+    captured = capture_console_suite(OUT)
     docs_out = OUT / "01_账号接入页.png"
-    if capture_runtime_docs(docs_out):
-        print("captured runtime /docs ->", docs_out.name)
-    else:
+    if not captured.get("01_账号接入页.png"):
         render_log_png(
             "01 AgentDesk 抖音 Runtime / 账号托管",
             "ChannelIngress + IPC：凭证就绪 → 收信启动 → messaging_ready",
@@ -217,25 +356,16 @@ def build() -> None:
             docs_out,
         )
 
-    render_log_png(
-        "02 抖音私信入站链路",
-        "WebSocket 入站 + unreplied_scan + profile 隔离（account_code）",
-        pick_lines(
-            logs,
-            [
-                "douyin_recv_server",
-                "WebSocket connection open",
-                "messaging_ready",
-                "unreplied_scan 已入队",
-                "dy_apis.douyin_recv_msg",
-            ],
-            limit=12,
-        ),
-        OUT / "02_会话工作台.png",
-    )
+    if not captured.get("02_会话工作台.png"):
+        print(
+            "ERROR: 02_会话工作台.png 未截到真实控制台。"
+            "请先启动 8765 服务后重跑：python docs/goai/build_submission_screenshots.py"
+        )
 
+    build_architecture()
     if ARCH.is_file():
         shutil.copy2(ARCH, OUT / "03_架构图或日志总览.png")
+        print("updated architecture -> 03_架构图或日志总览.png")
     else:
         render_log_png(
             "03 AgentDesk 架构总览",
@@ -244,41 +374,17 @@ def build() -> None:
             OUT / "03_架构图或日志总览.png",
         )
 
-    render_log_png(
-        "04 待回复 / AI 管线分流",
-        "入站消息 → pending_reply → 主进程 AI 管线（高风险可人工介入）",
-        pick_lines(
-            logs,
-            [
-                "platform_pending_reply_dbg",
-                "IM reply engine",
-                "文本消息跳过子进程自动回复",
-                "由主进程 AI 管线处理",
-                "unreplied_scan 已入队",
-            ],
-            limit=12,
-        ),
-        OUT / "04_高风险审批任务.png",
-    )
+    if not captured.get("04_高风险审批任务.png"):
+        print(
+            "ERROR: 04_高风险审批任务.png 未截到真实控制台。"
+            "请先启动 8765 服务后重跑：python docs/goai/build_submission_screenshots.py"
+        )
 
-    render_log_png(
-        "05 发送失败 / 核验告警",
-        "OutcomeVerify 相关：DOM 超时、IPC 发送失败、profile 解析告警",
-        pick_lines(
-            logs,
-            [
-                "im_browser_conv_reader",
-                "result=failed",
-                "IPC 发送文本失败",
-                "发送抖音私信失败",
-                "preview_account_id",
-                "未能将 profile_id",
-                "verify_failed",
-            ],
-            limit=12,
-        ),
-        OUT / "05_核验失败任务.png",
-    )
+    if not captured.get("05_核验失败任务.png"):
+        print(
+            "ERROR: 05_核验失败任务.png 未截到真实控制台。"
+            "请先启动 8765 服务后重跑：python docs/goai/build_submission_screenshots.py"
+        )
 
     if server_proc is not None:
         server_proc.terminate()

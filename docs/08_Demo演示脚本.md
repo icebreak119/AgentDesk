@@ -16,7 +16,7 @@
 | 项 | 说明 |
 |---|---|
 | 主系统 | AgentDesk 抖音 Runtime（`douyin_reverse_ipc` + `douyin_all_user`） |
-| API 入口 | `http://127.0.0.1:8765/docs`（Swagger，MCP 等价工具层） |
+| API 入口 | `http://127.0.0.1:8765/console`（中文操作台，MCP 等价工具层） |
 | 比赛仓库 | https://github.com/icebreak119/AgentDesk |
 | 主渠道 | 抖音私信 |
 | 扩展渠道 | 企业微信（复赛） |
@@ -36,7 +36,7 @@ python -m channels.douyin_reverse_ipc.http_server `
   --host 127.0.0.1 --port 8765
 ```
 
-浏览器打开 `http://127.0.0.1:8765/docs` 确认 API 在线。
+浏览器打开 `http://127.0.0.1:8765/console` 确认服务在线。
 
 ## 4. 录屏结构（约 3 分 30 秒）
 
@@ -44,7 +44,7 @@ python -m channels.douyin_reverse_ipc.http_server `
 |---|---|---|
 | 0:00~0:20 | 背景：私域客服痛点 | PPT 或 `06_架构图.png` |
 | 0:20~0:40 | AgentTeams 五 Agent 分工 | 架构图 |
-| 0:40~1:10 | **独立 Runtime**：8765/docs API 契约 | Swagger 页面 |
+| 0:40~1:10 | **独立 Runtime**：8765 在线接口文档 | 接口文档页面 |
 | 1:10~1:50 | 剧本 A：发送消息 + 回执 | 调用 send API 或日志 send ok |
 | 1:50~2:20 | 剧本 B：高风险 / 人工介入设计 | 日志 pending_reply / AI 管线分流 |
 | 2:20~3:00 | 剧本 C：核验失败证据 | 日志 verify_failed / IPC 失败 |
@@ -62,7 +62,7 @@ python -m channels.douyin_reverse_ipc.http_server `
 4. OutcomeVerify 校验回执与内容一致。
 5. 日志含 `profile_id` 可追踪。
 
-**画面建议：** Swagger `send` 接口 + 终端日志发送成功行。
+**画面建议：** 接口文档「发送文本私信」+ 终端日志发送成功行。
 
 ## 6. 剧本 B：高风险审批
 

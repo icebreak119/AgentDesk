@@ -1,18 +1,18 @@
 作品名称：私域客服自治工作台（AgentDesk）
 
 【问题与场景】
-企业私域客服存在多渠道会话分散、自动回复不可验证、高风险动作缺审批、经验难沉淀等问题，单 Bot 难以完成企业级闭环。
+企业私域客服面临多渠道会话分散、自动回复不可验证、高风险缺审批、经验难沉淀等痛点，单 Bot 难形成企业级闭环。
 
 【核心方案】
-基于 AgentTeams 构建多 Agent 协同基础设施，以抖音私信为主、企微为辅，设计值班长、会话编排、渠道接入、意图风控、执行核验五类 Agent，完成聚合、分级、执行、核验、审批、沉淀全链路，并沉淀 SessionNormalize、IntentTriage、ReplyPlan、ChannelSend、OutcomeVerify 等可复用 Skill。
+基于 AgentTeams 构建多 Agent 协同基础设施，以抖音私信为主、企微为辅，设计值班长、会话编排、渠道接入、意图风控、执行核验五类 Agent，完成聚合、分级、执行、核验、审批、沉淀全链路，沉淀 SessionNormalize、IntentTriage、ReplyPlan、ChannelSend、OutcomeVerify 等可复用 Skill。
 
 【创新点】
-1. 生产级约束：profile 隔离、防串号、短文本二次校验、失败可定位。
-2. Skill 与渠道解耦：换渠道仅换适配器，编排与核验逻辑复用。
-3. 可审计闭环：审批闸门 + 执行证据留痕，支持回滚与复盘。
+1. 生产级约束：profile 隔离、防串号、短文本二次校验。
+2. Skill 与渠道解耦：换渠道仅换适配器。
+3. 可审计闭环：审批闸门与执行证据留痕。
 
 【开放价值】
-Skill Schema、Agent Identity 模板、工具契约、核验协议可独立开源复用。
+Skill Schema、Identity 模板、MCP 等价契约可开源复用。
 
-【当前进展（诚实说明）】
-抖音渠道接入、会话拉取与发送、发送结果校验等能力已在私域业务系统中落地；AgentDesk 多 Agent 编排、Trace 工作台与 Task Runtime 后端为复赛实现项。初赛以方案设计、架构映射与真实渠道能力证明为主。
+【当前进展】
+抖音 Channel Runtime（8765 中文控制台）可独立启动，消息收发与资料同步已验证；多 Agent 编排与 Trace 工作台为复赛项。初赛以方案设计、架构映射与 Runtime 工程证据为主。

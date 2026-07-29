@@ -28,7 +28,7 @@ AgentDesk 是基于 **AgentTeams** 构建的多 Agent 私域客服自治工作�
 
 ## 重要说明
 
-- **Demo 录屏来源**：私域业务系统（抖音私信），不是 `127.0.0.1:5173`
+- **Demo 录屏来源**：AgentDesk 抖音 Channel Runtime（`8765/console`），不是 `127.0.0.1:5173`
 - `5173` 是独立的小红书项目 `xhs-ai-kefu`，不属于本次 AgentDesk 初赛主场景
 - **Trace 工作台 / Task Runtime**：复赛实现项，初赛为设计稿
 
@@ -40,4 +40,4 @@ AgentDesk 是基于 **AgentTeams** 构建的多 Agent 私域客服自治工作�
 
 ## License
 
-[MIT](LICENSE)
+[MIT](../LICENSE)（仓库根目录）
