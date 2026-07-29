@@ -40,4 +40,4 @@ AgentDesk 是基于 **AgentTeams** 构建的多 Agent 私域客服自治工作�
 
 ## License
 
-TBD
+[MIT](LICENSE)
