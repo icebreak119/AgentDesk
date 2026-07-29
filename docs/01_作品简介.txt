@@ -1,18 +1,18 @@
 作品名称：私域客服自治工作台（AgentDesk）
 
 【问题与场景】
-企业私域客服面临多渠道会话分散、自动回复不可验证、高风险缺审批、经验难沉淀等痛点，单 Bot 难形成企业级闭环。
+企业私域客服面临多渠道会话分散、回复不可验证、高风险缺审批、经验难沉淀，单 Bot 难成企业级闭环。
 
 【核心方案】
-基于 AgentTeams 构建多 Agent 协同基础设施，以抖音私信为主、企微为辅，设计值班长、会话编排、渠道接入、意图风控、执行核验五类 Agent，完成聚合、分级、执行、核验、审批、沉淀全链路，沉淀 SessionNormalize、IntentTriage、ReplyPlan、ChannelSend、OutcomeVerify 等可复用 Skill。
+基于 AgentTeams 构建多 Agent 基础设施，以抖音私信为主，设值班长、会话编排、渠道接入、意图风控、执行核验五类 Agent，完成聚合、分级、执行、核验、审批、沉淀，沉淀 SessionNormalize、IntentTriage、ReplyPlan、ChannelSend、OutcomeVerify 五 Skill。
 
 【创新点】
-1. 生产级约束：profile 隔离、防串号、短文本二次校验。
-2. Skill 与渠道解耦：换渠道仅换适配器。
-3. 可审计闭环：审批闸门与执行证据留痕。
+1. profile 隔离、防串号、短文本二次校验。
+2. Skill 与渠道解耦，换渠道仅换适配器。
+3. 审批闸门与执行证据可审计。
 
 【开放价值】
-Skill Schema、Identity 模板、MCP 等价契约可开源复用。
+Skill Schema、Identity 模板、MCP 契约可开源复用。
 
 【当前进展】
-抖音 Channel Runtime（8765 中文控制台）可独立启动；初赛参考编排器（orchestrator）可跑通剧本 A/B 并输出 trace.jsonl；Skill 注册表与 IntentTriage/ReplyPlan v0.1 可 CLI 调用；MCP 契约含 pytest。AgentTeams 官方运行时与 Trace 工作台为复赛项。
+抖音 Runtime（8765）可独立启动；参考编排器跑通剧本 A/B；Skill 与 MCP 契约可 CLI/pytest。官方 AgentTeams 与 Trace UI 为复赛项。
