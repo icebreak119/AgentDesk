@@ -15,4 +15,4 @@
 Skill Schema、Identity 模板、MCP 等价契约可开源复用。
 
 【当前进展】
-抖音 Channel Runtime（8765 中文控制台）可独立启动，消息收发与资料同步已验证；多 Agent 编排与 Trace 工作台为复赛项。初赛以方案设计、架构映射与 Runtime 工程证据为主。
+抖音 Channel Runtime（8765 中文控制台）可独立启动；初赛参考编排器（orchestrator）可跑通剧本 A/B 并输出 trace.jsonl；Skill 注册表与 IntentTriage/ReplyPlan v0.1 可 CLI 调用；MCP 契约含 pytest。AgentTeams 官方运行时与 Trace 工作台为复赛项。

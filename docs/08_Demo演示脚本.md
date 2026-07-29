@@ -1,100 +1,129 @@
 # AgentDesk 初赛 Demo 演示脚本
 
 > 建议录制 3~5 分钟视频，作为官网「Demo 链接」提交。  
-> **录制来源：AgentDesk 抖音 Channel Runtime（独立模块），不是第三方桌面壳，也不是 5173 小红书项目。**
+> **录制来源：AgentDesk 抖音 Channel Runtime + 参考编排器 + Skill CLI，不是第三方桌面壳。**
 
 ## 1. 演示目标
 
-向评委证明三件事：
+向评委证明四件事：
 
-1. **独立 Runtime**：抖音 IPC 可单独启动，不依赖任何第三方「云朵 / 私域」桌面产品。
-2. **闭环设计完整**：入站 → 分级 → 执行 → 核验 → 证据（编排层复赛落地，Runtime 已可验证）。
-3. **工程可信**：profile 隔离、发送回执、失败分支可定位。
+1. **独立 Runtime**：抖音 IPC 可单独启动，不依赖任何第三方桌面产品。
+2. **多 Agent 可运行**：参考编排器输出 `trace.jsonl`，跨 Agent 调度有据可查。
+3. **Skill 可调用**：注册表 + IntentTriage/ReplyPlan CLI 可演示。
+4. **工程可信**：profile 隔离、审批闸门、mock/live 可切换。
 
 ## 2. 环境说明
 
 | 项 | 说明 |
 |---|---|
-| 主系统 | AgentDesk 抖音 Runtime（`douyin_reverse_ipc` + `douyin_all_user`） |
-| API 入口 | `http://127.0.0.1:8765/console`（中文操作台，MCP 等价工具层） |
+| 主系统 | AgentDesk 抖音 Runtime + `orchestrator/` + `skills/` |
+| API 入口 | `http://127.0.0.1:8765/console` |
 | 比赛仓库 | https://github.com/icebreak119/AgentDesk |
-| 主渠道 | 抖音私信 |
-| 扩展渠道 | 企业微信（复赛） |
+| 工作目录 | 克隆后 `cd AgentDesk`（仓库根目录） |
 
-**不要使用的 Demo 来源：**
+## 3. 录屏前准备
 
-- `http://127.0.0.1:5173`（`xhs-ai-kefu` 小红书，与本次赛道无关）
-- 第三方「云朵 / 私域」整壳桌面 UI（非 AgentDesk 交付物）
-- 未标注「设计稿 / 复赛」的 Trace 全链路页面
-
-## 3. 录屏前启动（终端可见）
+### 3.1 编排器 + Skill（离线可跑，无需 8765）
 
 ```powershell
-cd C:\Users\31368\Desktop\siyu\siyu
+cd AgentDesk
+python -m orchestrator.demo.script_a_consult
+python -m orchestrator.demo.script_b_approval
+type orchestrator\output\trace.jsonl
+python skills/run_skill.py intent_triage -i skills/intent_triage/v0.1/examples/consult.json --pretty
+```
+
+### 3.2 Runtime（可选 live 联调）
+
+```powershell
+cd runtime/douyin
+pip install -r requirements.txt
+$env:PYTHONPATH = (Get-Location).Path
 python -m channels.douyin_reverse_ipc.http_server `
   --db-path channels\douyin_all_user\reverse_runtime\_douyin_im_accounts.db `
   --host 127.0.0.1 --port 8765
 ```
 
-浏览器打开 `http://127.0.0.1:8765/console` 确认服务在线。
+浏览器打开 `http://127.0.0.1:8765/console`。
 
-## 4. 录屏结构（约 3 分 30 秒）
+live 发送：
+
+```powershell
+cd AgentDesk
+python -m orchestrator.demo.script_a_consult --live
+```
+
+## 4. 录屏结构（约 4 分钟）
 
 | 时段 | 内容 | 画面 |
 |---|---|---|
 | 0:00~0:20 | 背景：私域客服痛点 | PPT 或 `06_架构图.png` |
-| 0:20~0:40 | AgentTeams 五 Agent 分工 | 架构图 |
-| 0:40~1:10 | **独立 Runtime**：8765 在线接口文档 | 接口文档页面 |
-| 1:10~1:50 | 剧本 A：发送消息 + 回执 | 调用 send API 或日志 send ok |
-| 1:50~2:20 | 剧本 B：高风险 / 人工介入设计 | 日志 pending_reply / AI 管线分流 |
-| 2:20~3:00 | 剧本 C：核验失败证据 | 日志 verify_failed / IPC 失败 |
-| 3:00~3:30 | 总结：复赛 AgentTeams 代码包 | PPT P11 |
+| 0:20~0:40 | AgentTeams 五 Agent + orchestrator 映射 | 架构图 |
+| 0:40~1:20 | **剧本 A trace**：编排器一键运行 | 终端 `script_a_consult` + `trace.jsonl` |
+| 1:20~1:50 | **Skill CLI**：IntentTriage / ReplyPlan | `run_skill.py` 输出 |
+| 1:50~2:30 | **8765 控制台**：账号 / 发送 / 会话 | `/console` 截图同类画面 |
+| 2:30~3:10 | **剧本 B 审批**：挂起 → 批准 | `script_b_approval` trace 含 `approval_required` |
+| 3:10~3:40 | 契约 pytest + GitHub 仓库 | `pytest docs/contracts/tests -q` |
+| 3:40~4:00 | 总结：参考编排 → 复赛官方 AgentTeams | PPT |
 
-## 5. 剧本 A：普通咨询（主路径）
+## 5. 剧本 A：普通咨询（编排器主路径）
 
 **输入消息：**「在吗，想了解价格」
 
+**终端命令：**
+
+```powershell
+python -m orchestrator.demo.script_a_consult
+```
+
 **讲解要点：**
 
-1. ChannelIngress 归一入站（SessionNormalize）。
-2. TriageGuard → consult / low / 无需审批（编排层设计，复赛联调）。
-3. ActVerify 经 ChannelSend 调用 **8765 Runtime** 发送。
-4. OutcomeVerify 校验回执与内容一致。
-5. 日志含 `profile_id` 可追踪。
-
-**画面建议：** 接口文档「发送文本私信」+ 终端日志发送成功行。
+1. ChannelIngress → SessionNormalize
+2. TriageGuard → IntentTriage：`consult / low / need_approval=false`
+3. ReplyPlan 生成 `draft_text`
+4. ActVerify → ChannelSend（mock）→ OutcomeVerify（pass）
+5. `trace.jsonl` 含 SessionTL 状态跳转
 
 ## 6. 剧本 B：高风险审批
 
-**输入消息：**「我要退款，帮我改一下账户」
+**输入消息：**「我要退款，改一下账户」
+
+**终端命令：**
+
+```powershell
+python -m orchestrator.demo.script_b_approval
+```
 
 **讲解要点：**
 
-1. TriageGuard 标记 `need_approval=true`。
-2. DutyManager 挂起，未审批不调用 ChannelSend。
-3. 审批通过后才走 Runtime 发送；拒绝只写审计。
+1. IntentTriage → `need_approval=true`
+2. DutyManager 挂起 `suspended`，未批准不发送
+3. `approval_granted` 后才 ChannelSend
+4. 拒绝路径：`python -m orchestrator.demo.script_b_approval --reject`
 
-**画面建议：** 日志中「主进程 AI 管线 / pending_reply」+ PPT 剧本 B。
+## 7. Skill CLI 演示段（约 30 秒）
 
-## 7. 剧本 C：核验失败（加分项）
+```powershell
+python skills/run_skill.py intent_triage -i skills/intent_triage/v0.1/examples/refund.json --pretty
+python skills/run_skill.py reply_plan -i skills/reply_plan/v0.1/examples/high_risk.json --pretty
+```
 
-**输入消息：** 短文本「1」「在」
+强调：`registry.yaml` 五 Skill 索引；高风险 ReplyPlan **不附带 approval_token**。
 
-**讲解要点：**
+## 8. 剧本 C：核验失败（Runtime 加分项）
 
-1. 不只看 preview，OutcomeVerify 做 DOM/回执二次校验。
-2. `verify_failed` / `result=failed` 不入库为成功。
+**画面建议：** `07_系统截图/05_核验失败任务.png` + 口播 OutcomeVerify 设计。
 
-**画面建议：** `07_系统截图/05_核验失败任务.png` 同类日志（已打码）。
+短文本「1」「在」须 DOM 二次校验，`verify_failed` 不入库为成功。
 
-## 8. 演示总结话术（可直接念）
+## 9. 演示总结话术
 
 > AgentDesk 是基于 AgentTeams 的多 Agent 私域客服自治基础设施。  
-> 初赛我们已把抖音渠道抽成**可独立运行的 Channel Runtime**（IPC HTTP + 托管入站），并给出完整的 Agent、Skill 与闭环设计。  
-> 复赛将把编排层与 Trace 工作台迁入 AgentDesk 主仓，完成端到端联调。
+> 初赛我们交付了可独立运行的抖音 Channel Runtime，以及 **AgentTeams 能力映射的参考编排器**——剧本 A/B 可输出 trace.jsonl，Skill 可注册调用，MCP 契约有 pytest 校验。  
+> 复赛将编排层迁移至 AgentTeams 官方运行时，并建设 Trace 工作台与 Task 持久化。
 
-## 9. 视频文件建议
+## 10. 视频文件建议
 
 - 文件名：`AgentDesk_初赛Demo_20260729.mp4`
 - 上传：B 站 / 飞书 / 阿里云盘公开链接
-- 官网 Demo 链接：填**公网视频 URL**（可口播 localhost，但表单勿只填 localhost）
+- 官网 Demo 链接：填**公网视频 URL**
