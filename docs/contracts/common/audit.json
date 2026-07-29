@@ -1,0 +1,60 @@
+{
+  "名称": "AgentDesk 工具调用审计规范",
+  "版本": "0.1.0",
+  "说明": "Skill / MCP 等价工具每次调用须写入审计记录，供 Trace 与合规复盘。初赛：JSONL 文件或日志；复赛：Evidence DB。",
+  "必填字段": {
+    "audit_id": "string，UUID，单次调用唯一",
+    "task_id": "string，编排任务 ID，无编排时可用 client 生成",
+    "profile_id": "string，账号隔离维度，对应 account_code",
+    "agent_id": "string，调用方 Agent，如 agent.act_verify",
+    "skill_name": "string，如 ChannelSend",
+    "tool_name": "string，如 channel.send_message",
+    "channel": "string，douyin|qywx",
+    "session_ref": "string，会话标识",
+    "idempotency_key": "string，写操作必填，见 idempotency.json",
+    "outcome": "string，ok|failed|skipped|pending_approval",
+    "error_code": "string，outcome=failed 时必填，引用 errors.json；成功可空字符串",
+    "ts": "string，ISO8601 本地时间"
+  },
+  "可选字段": {
+    "trace_id": "string，分布式追踪 ID",
+    "duration_ms": "integer，耗时毫秒",
+    "evidence_ref": "string，核验证据引用，如 log://verify/001",
+    "approval_token": "string，高风险放行令牌",
+    "metadata": "object，扩展信息（不含客户明文隐私）"
+  },
+  "样例": [
+    {
+      "audit_id": "aud_20260729_0001",
+      "task_id": "task_20260729_001",
+      "profile_id": "d6a26b9e-****",
+      "agent_id": "agent.act_verify",
+      "skill_name": "ChannelSend",
+      "tool_name": "channel.send_message",
+      "channel": "douyin",
+      "session_ref": "0:1:1550776822954327:4345741094434680",
+      "idempotency_key": "task_20260729_001:send:1",
+      "outcome": "ok",
+      "error_code": "",
+      "ts": "2026-07-29T22:00:00+08:00",
+      "duration_ms": 842,
+      "evidence_ref": "log://send/receipt/001"
+    },
+    {
+      "audit_id": "aud_20260729_0002",
+      "task_id": "task_20260729_002",
+      "profile_id": "d6a26b9e-****",
+      "agent_id": "agent.act_verify",
+      "skill_name": "OutcomeVerify",
+      "tool_name": "channel.send_message",
+      "channel": "douyin",
+      "session_ref": "0:1:1550776822954327:4345741094434680",
+      "idempotency_key": "task_20260729_002:send:1",
+      "outcome": "failed",
+      "error_code": "verify_failed",
+      "ts": "2026-07-29T22:00:05+08:00",
+      "duration_ms": 1203,
+      "evidence_ref": "log://verify/expected_vs_actual/002"
+    }
+  ]
+}

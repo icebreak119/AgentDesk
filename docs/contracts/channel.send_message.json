@@ -1,21 +1,69 @@
 {
   "名称": "channel.send_message",
+  "版本": "0.1.0",
   "说明": "向指定渠道会话发送消息（AgentDesk MCP 等价契约）",
+  "规范引用": {
+    "错误码": "common/errors.json",
+    "审计": "common/audit.json",
+    "幂等": "common/idempotency.json"
+  },
   "输入": {
-    "channel": "douyin|qywx",
-    "profile_id": "string",
-    "session_ref": "string",
-    "content": "string",
-    "idempotency_key": "string"
+    "channel": {
+      "类型": "string",
+      "枚举": ["douyin", "qywx"],
+      "必填": true
+    },
+    "profile_id": {
+      "类型": "string",
+      "说明": "账号隔离标识，对应 account_code",
+      "必填": true
+    },
+    "session_ref": {
+      "类型": "string",
+      "说明": "conversation_id 或 peer_uid",
+      "必填": true
+    },
+    "content": {
+      "类型": "string",
+      "必填": true
+    },
+    "idempotency_key": {
+      "类型": "string",
+      "必填": true,
+      "格式": "见 common/idempotency.json"
+    }
   },
   "输出": {
     "send_id": "string",
-    "status": "ok|failed",
+    "status": {
+      "类型": "string",
+      "枚举": ["ok", "failed"]
+    },
     "receipt_raw": "object",
-    "ts": "iso8601"
+    "ts": "string，ISO8601"
   },
-  "鉴权": "profile 级令牌",
-  "重试": "最多 2 次退避",
-  "审计": "task_id + profile_id + tool_name",
-  "运行时实现": "channels/douyin_reverse_ipc HTTP POST /accounts/{account_code}/send/text"
+  "鉴权": "profile 级令牌（账号 cookie/keys）",
+  "重试": {
+    "最大次数": 2,
+    "退避": "指数退避",
+    "可重试错误码": ["send_unconfirmed", "dependency_missing", "internal"]
+  },
+  "审计": {
+    "tool_name": "channel.send_message",
+    "skill_name": "ChannelSend",
+    "必填": ["task_id", "profile_id", "agent_id", "idempotency_key", "outcome", "ts"]
+  },
+  "常见错误码": [
+    "account_required",
+    "account_not_found",
+    "auth_invalid",
+    "not_running",
+    "peer_required",
+    "text_empty",
+    "send_unconfirmed",
+    "verify_failed",
+    "account_mismatch",
+    "invalid_request"
+  ],
+  "运行时实现": "runtime/douyin/channels/douyin_reverse_ipc HTTP POST /accounts/{account_code}/send/text"
 }

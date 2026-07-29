@@ -1,10 +1,26 @@
 {
   "名称": "channel.query_session",
+  "版本": "0.1.0",
   "说明": "查询指定会话上下文（AgentDesk MCP 等价契约）",
+  "规范引用": {
+    "错误码": "common/errors.json",
+    "审计": "common/audit.json"
+  },
   "输入": {
-    "channel": "douyin|qywx",
-    "profile_id": "string",
-    "session_ref": "string"
+    "channel": {
+      "类型": "string",
+      "枚举": ["douyin", "qywx"],
+      "必填": true
+    },
+    "profile_id": {
+      "类型": "string",
+      "必填": true
+    },
+    "session_ref": {
+      "类型": "string",
+      "说明": "conversation_id",
+      "必填": true
+    }
   },
   "输出": {
     "customer_ref": "string",
@@ -13,6 +29,20 @@
     "degraded": "boolean"
   },
   "鉴权": "profile 级令牌",
-  "重试": "读操作天然幂等",
-  "运行时实现": "channels/douyin_reverse_ipc HTTP GET 会话相关接口"
+  "重试": {
+    "说明": "读操作天然幂等",
+    "可重试错误码": ["internal", "dependency_missing"]
+  },
+  "审计": {
+    "tool_name": "channel.query_session",
+    "skill_name": "SessionNormalize",
+    "必填": ["task_id", "profile_id", "agent_id", "outcome", "ts"]
+  },
+  "常见错误码": [
+    "account_required",
+    "account_not_found",
+    "peer_required",
+    "auth_invalid"
+  ],
+  "运行时实现": "runtime/douyin/channels/douyin_reverse_ipc HTTP GET /accounts/{account_code}/conversations"
 }

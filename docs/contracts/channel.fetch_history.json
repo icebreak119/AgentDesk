@@ -1,18 +1,54 @@
 {
   "名称": "channel.fetch_history",
+  "版本": "0.1.0",
   "说明": "获取会话历史消息（AgentDesk MCP 等价契约）",
+  "规范引用": {
+    "错误码": "common/errors.json",
+    "审计": "common/audit.json"
+  },
   "输入": {
-    "channel": "douyin|qywx",
-    "profile_id": "string",
-    "session_ref": "string",
-    "limit": "integer",
-    "since_ts": "iso8601|null"
+    "channel": {
+      "类型": "string",
+      "枚举": ["douyin", "qywx"],
+      "必填": true
+    },
+    "profile_id": {
+      "类型": "string",
+      "必填": true
+    },
+    "session_ref": {
+      "类型": "string",
+      "必填": true
+    },
+    "limit": {
+      "类型": "integer",
+      "默认": 50,
+      "范围": "1-500"
+    },
+    "since_ts": {
+      "类型": "string|null",
+      "说明": "ISO8601，增量拉取"
+    }
   },
   "输出": {
     "messages": "Message[]",
     "degraded": "boolean"
   },
   "鉴权": "profile 级令牌",
-  "重试": "读操作天然幂等",
-  "运行时实现": "channels/douyin_reverse_ipc HTTP GET 消息历史接口"
+  "重试": {
+    "说明": "读操作天然幂等",
+    "可重试错误码": ["internal", "dependency_missing"]
+  },
+  "审计": {
+    "tool_name": "channel.fetch_history",
+    "skill_name": "SessionNormalize",
+    "必填": ["task_id", "profile_id", "agent_id", "outcome", "ts"]
+  },
+  "常见错误码": [
+    "account_required",
+    "account_not_found",
+    "peer_required",
+    "auth_invalid"
+  ],
+  "运行时实现": "runtime/douyin/channels/douyin_reverse_ipc HTTP GET /accounts/{account_code}/conversations/{conversation_id}/messages"
 }

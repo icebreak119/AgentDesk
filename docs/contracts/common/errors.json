@@ -1,0 +1,126 @@
+{
+  "名称": "AgentDesk 渠道工具统一错误码",
+  "版本": "0.1.0",
+  "说明": "MCP 等价 HTTP 接口与 Runtime RPC 共用错误码表。响应体格式：{ \"ok\": false, \"error\": { \"code\": \"...\", \"message\": \"...\" } }",
+  "错误码": [
+    {
+      "code": "account_required",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "缺少 account_code / profile_id",
+      "典型场景": "未传账号标识"
+    },
+    {
+      "code": "account_not_found",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "凭证库中不存在该账号",
+      "典型场景": "账号未采集或已删除"
+    },
+    {
+      "code": "auth_invalid",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "cookie/keys 无效或过期",
+      "典型场景": "凭证失效、需重新采集"
+    },
+    {
+      "code": "not_running",
+      "http_status": 400,
+      "可重试": true,
+      "说明": "账号托管未启动",
+      "典型场景": "发送前未调用 start"
+    },
+    {
+      "code": "peer_required",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "缺少 conversation_id 或 peer_uid",
+      "典型场景": "发送/查询未指定会话"
+    },
+    {
+      "code": "text_empty",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "文本内容为空",
+      "典型场景": "send/text 未填正文"
+    },
+    {
+      "code": "emoji_invalid",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "表情参数无效",
+      "典型场景": "emoji_url 缺失"
+    },
+    {
+      "code": "image_invalid",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "图片路径无效",
+      "典型场景": "本地文件不存在"
+    },
+    {
+      "code": "send_unconfirmed",
+      "http_status": 400,
+      "可重试": true,
+      "说明": "渠道侧未确认发送成功",
+      "典型场景": "回执异常、ticket 失效"
+    },
+    {
+      "code": "verify_failed",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "OutcomeVerify 校验失败，expected 与 actual 不一致",
+      "典型场景": "短文本 DOM 二次校验失败"
+    },
+    {
+      "code": "account_mismatch",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "profile 与会话目标不一致，防串号",
+      "典型场景": "跨账号发送拦截"
+    },
+    {
+      "code": "avatar_not_found",
+      "http_status": 404,
+      "可重试": true,
+      "说明": "头像尚未同步或文件缺失",
+      "典型场景": "资料同步未完成"
+    },
+    {
+      "code": "avatar_forbidden",
+      "http_status": 403,
+      "可重试": false,
+      "说明": "头像路径不在允许目录",
+      "典型场景": "路径穿越防护"
+    },
+    {
+      "code": "invalid_request",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "请求 JSON / 参数格式错误",
+      "典型场景": "stdio RPC 协议错误"
+    },
+    {
+      "code": "method_not_found",
+      "http_status": 400,
+      "可重试": false,
+      "说明": "未知 RPC 方法",
+      "典型场景": "调用了未实现的方法"
+    },
+    {
+      "code": "dependency_missing",
+      "http_status": 500,
+      "可重试": true,
+      "说明": "运行时依赖缺失",
+      "典型场景": "websocket-client 未安装"
+    },
+    {
+      "code": "internal",
+      "http_status": 500,
+      "可重试": true,
+      "说明": "未分类内部错误",
+      "典型场景": "兜底错误"
+    }
+  ]
+}

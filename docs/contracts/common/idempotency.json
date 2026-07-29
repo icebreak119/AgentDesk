@@ -1,0 +1,34 @@
+{
+  "名称": "AgentDesk 写操作幂等规范",
+  "版本": "0.1.0",
+  "说明": "channel.send_message 等写操作必须携带 idempotency_key，防止重试导致重复发送。",
+  "适用工具": [
+    "channel.send_message"
+  ],
+  "键格式": {
+    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{7,127}$",
+    "推荐组成": "{task_id}:{action}:{seq}",
+    "示例": [
+      "task_20260729_001:send:1",
+      "client_msg_abc123",
+      "d6a26b9e-5f1d-44cb-9ee4-c3ca4178d1e2:send:20260729220000"
+    ],
+    "最小长度": 8,
+    "最大长度": 128
+  },
+  "存储": {
+    "scope": "profile_id + idempotency_key",
+    "ttl_seconds": 86400,
+    "说明": "同一 profile 下相同 key 在 TTL 内返回首次结果，不重复执行"
+  },
+  "重复请求行为": {
+    "相同_key相同参数": "返回缓存的成功/失败结果，HTTP 200",
+    "相同_key不同参数": "拒绝，error_code=invalid_request",
+    "缺失_key": "服务端可自动生成，但 Agent 调用方应显式传入"
+  },
+  "运行时实现": {
+    "模块": "channels/douyin_reverse_ipc/send_service.py",
+    "函数": "_idempotency_get / _idempotency_set",
+    "参数映射": "HTTP body.client_msg_id 或 RPC client_msg_id"
+  }
+}
