@@ -1,12 +1,11 @@
 ﻿# AgentDesk Runtime
 
-抖音 Channel Runtime 由两块模块组成，可独立启动，不依赖第三方桌面壳：
+初赛已迁入可运行的 **抖音 Channel Runtime** 源码。
 
-| 模块 | 开发仓路径 | 说明 |
-|---|---|---|
-| 渠道托管 / 入站 | `channels/douyin_all_user/` | ChannelIngress、profile 隔离 |
-| IPC HTTP 服务 | `channels/douyin_reverse_ipc/` | MCP 等价 API，默认 `8765` |
+| 路径 | 说明 |
+|---|---|
+| [douyin/](douyin/) | `douyin_reverse_ipc` HTTP 服务 + `reverse_runtime` 收发包 |
+| [douyin/README.md](douyin/README.md) | 安装、启动、测试命令 |
 
-启动与验证见 [docs/10_运行说明.md](docs/10_运行说明.md)。
-
-复赛将迁入本目录 `runtime/douyin/`。
+MCP 等价契约：`docs/contracts/`  
+运行与截图说明：`docs/10_运行说明.md`

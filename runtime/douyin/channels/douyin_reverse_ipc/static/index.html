@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentDesk 抖音渠道 Runtime</title>
+  <link rel="stylesheet" href="/static/console.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">AgentDesk · 渠道工具层</p>
+        <h1>抖音渠道 Runtime 控制台</h1>
+        <p class="lede">多账号托管、私信发送、会话查询。本机调试专用，接口契约对齐 MCP 工具层。</p>
+      </div>
+      <div class="hero-status" id="healthCard">
+        <span class="status-dot" id="healthDot"></span>
+        <div>
+          <div class="status-label">服务状态</div>
+          <div class="status-value" id="healthText">检测中…</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel span-2">
+        <div class="panel-head">
+          <h2>账号托管</h2>
+          <p>选择账号并启停 Runtime 进程</p>
+        </div>
+        <div class="panel-body stack">
+          <label class="field">
+            <span>当前账号</span>
+            <select id="accountSelect"></select>
+          </label>
+          <div class="btn-row">
+            <button class="btn primary" id="btnStart" type="button">启动托管</button>
+            <button class="btn" id="btnStop" type="button">停止托管</button>
+            <button class="btn" id="btnReload" type="button">重载凭证</button>
+            <button class="btn ghost" id="btnRefreshAccounts" type="button">刷新列表</button>
+          </div>
+          <pre class="output" id="accountOutput">等待加载账号…</pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>账号状态</h2>
+          <p>实时查看选中账号运行信息</p>
+        </div>
+        <div class="panel-body">
+          <button class="btn block" id="btnStatus" type="button">查询状态</button>
+          <pre class="output" id="statusOutput">尚未查询</pre>
+        </div>
+      </section>
+
+      <section class="panel span-2">
+        <div class="panel-head">
+          <h2>发送文本私信</h2>
+          <p>对应 ChannelSend 工具能力</p>
+        </div>
+        <div class="panel-body stack">
+          <label class="field">
+            <span>消息正文</span>
+            <textarea id="sendText" rows="3" placeholder="输入要发送的文本"></textarea>
+          </label>
+          <div class="field-grid">
+            <label class="field">
+              <span>会话 ID</span>
+              <input id="conversationId" type="text" placeholder="conversation_id" />
+            </label>
+            <label class="field">
+              <span>对方 UID</span>
+              <input id="peerUid" type="text" placeholder="peer_uid" />
+            </label>
+          </div>
+          <label class="field checkbox">
+            <input id="isAiReply" type="checkbox" />
+            <span>标记为 AI 回复</span>
+          </label>
+          <button class="btn primary block" id="btnSend" type="button">发送文本</button>
+          <pre class="output" id="sendOutput">尚未发送</pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>会话列表</h2>
+          <p>拉取最近会话</p>
+        </div>
+        <div class="panel-body stack">
+          <label class="field">
+            <span>条数上限</span>
+            <input id="convLimit" type="number" min="1" max="500" value="20" />
+          </label>
+          <button class="btn block" id="btnConversations" type="button">查询会话</button>
+          <pre class="output" id="convOutput">尚未查询</pre>
+        </div>
+      </section>
+
+      <section class="panel span-full">
+        <div class="panel-head">
+          <h2>系统信息</h2>
+          <p>凭证库路径与健康检查</p>
+        </div>
+        <div class="panel-body stack">
+          <div class="btn-row">
+            <button class="btn" id="btnPing" type="button">健康检查</button>
+            <button class="btn" id="btnDbPath" type="button">凭证库路径</button>
+            <button class="btn danger" id="btnStopAll" type="button">停止全部账号</button>
+          </div>
+          <pre class="output" id="systemOutput">—</pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>AgentDesk 抖音渠道 Runtime · 本机调试</span>
+      <a href="/docs" class="footer-link">开发者 OpenAPI 文档</a>
+    </footer>
+  </div>
+  <script src="/static/console.js"></script>
+</body>
+</html>

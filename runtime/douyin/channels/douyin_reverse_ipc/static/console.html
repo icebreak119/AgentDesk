@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentDesk 抖音渠道 Runtime</title>
+  <style>
+    :root {
+      --bg: #e8f3fb;
+      --bg-deep: #dbeaf7;
+      --surface: #ffffff;
+      --line: rgba(37, 99, 168, 0.12);
+      --text: #0f2744;
+      --muted: #5b728a;
+      --accent: #1d6fb8;
+      --accent-soft: #e3f0fb;
+      --ok: #0f766e;
+      --warn: #b45309;
+      --danger: #b42318;
+      --shadow: 0 18px 48px -28px rgba(21, 78, 140, 0.35);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #f7fbff 0%, transparent 60%),
+        radial-gradient(900px 500px at 100% 0%, #d9ebf8 0%, transparent 55%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+    }
+
+    .shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px 20px 48px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 40px);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      font-weight: 650;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 52ch;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+    .dot.ok { background: #14b8a6; }
+    .dot.bad { background: var(--danger); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1.35fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero { flex-direction: column; align-items: flex-start; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-head p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .panel-body { padding: 18px 20px 20px; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button, .btn-link {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+
+    button:hover { border-color: rgba(29, 111, 184, 0.35); background: var(--accent-soft); }
+    button:active { transform: scale(0.98); }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover { background: #185f9d; }
+    button.danger { color: var(--danger); }
+
+    .account-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .account-item {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      background: linear-gradient(180deg, #fbfdff 0%, #f7fbff 100%);
+    }
+
+    .account-item.active {
+      border-color: rgba(29, 111, 184, 0.35);
+      box-shadow: inset 0 0 0 1px rgba(29, 111, 184, 0.08);
+    }
+
+    .account-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .account-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      object-fit: cover;
+      background: linear-gradient(145deg, #dbeafe, #bfdbfe);
+      border: 1px solid rgba(29, 111, 184, 0.15);
+      flex-shrink: 0;
+    }
+
+    .avatar.avatar-fallback {
+      visibility: hidden;
+    }
+
+    .avatar-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #dbeafe, #bfdbfe);
+      border: 1px solid rgba(29, 111, 184, 0.15);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      font-size: 16px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .account-name {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-code-sub,
+    .conversation-sub {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-code {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .conversation-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .conversation-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fbfdff 0%, #f7fbff 100%);
+      cursor: pointer;
+      transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    }
+
+    .conversation-item:hover {
+      border-color: rgba(29, 111, 184, 0.28);
+      background: #f3f9ff;
+    }
+
+    .conversation-item:active {
+      transform: scale(0.99);
+    }
+
+    .conversation-item.active {
+      border-color: rgba(29, 111, 184, 0.42);
+      box-shadow: inset 0 0 0 1px rgba(29, 111, 184, 0.08);
+    }
+
+    .conversation-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .conversation-name {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      font: inherit;
+      color: var(--text);
+      background: #fbfdff;
+    }
+
+    textarea { min-height: 88px; resize: vertical; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .split { grid-template-columns: 1fr; }
+    }
+
+    .log {
+      margin-top: 18px;
+      background: #f8fbfe;
+      color: #1e293b;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      min-height: 220px;
+      max-height: 360px;
+      overflow: auto;
+      font: 12px/1.6 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .schema-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .schema-grid { grid-template-columns: 1fr; }
+    }
+
+    .schema-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #f8fbfe;
+    }
+
+    .schema-card h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+    }
+
+    .schema-card p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty {
+      padding: 28px 12px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">AgentDesk · 渠道 Runtime</p>
+        <h1>抖音渠道控制台</h1>
+        <p class="subtitle">独立运行的渠道工具层，支持账号托管、私信发送与会话查询。本页面为中文操作台，底层接口与 MCP 等价契约一致。</p>
+      </div>
+      <div class="status-pill" id="health-pill">
+        <span class="dot" id="health-dot"></span>
+        <span id="health-text">正在检测服务状态…</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>账号托管</h2>
+            <p>选择账号并启动 / 停止收信与发送能力</p>
+          </div>
+          <div class="toolbar">
+            <button type="button" id="btn-refresh">刷新列表</button>
+            <button type="button" class="danger" id="btn-stop-all">全部停止</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="account-list" id="account-list">
+            <div class="empty">正在加载账号…</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>发送文本私信</h2>
+            <p>对应接口：发送文本私信</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <form class="form-grid" id="send-form">
+            <label>
+              当前账号
+              <select id="account-select" required></select>
+            </label>
+            <div class="split">
+              <label>
+                会话编号
+                <input id="conversation-id" placeholder="选择下方会话后自动填入" />
+              </label>
+              <label>
+                对方用户编号
+                <input id="peer-uid" placeholder="选择下方会话后自动填入" />
+              </label>
+            </div>
+            <label>
+              消息正文
+              <textarea id="message-text" placeholder="请输入要发送的文本内容" required></textarea>
+            </label>
+            <div class="toolbar">
+              <button type="submit" class="primary">发送消息</button>
+              <button type="button" id="btn-load-conversations">拉取会话列表</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top: 18px;">
+      <div class="panel-head">
+        <div>
+          <h2>私信会话</h2>
+          <p>展示对方真实昵称与头像，点击会话可填入发送表单</p>
+        </div>
+        <button type="button" id="btn-reload-conversations">刷新会话</button>
+      </div>
+      <div class="panel-body">
+        <div class="conversation-list" id="conversation-list">
+          <div class="empty">请选择账号并点击「刷新会话」</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <div class="panel-head">
+        <div>
+          <h2>数据模型说明</h2>
+          <p>原 Swagger「Schemas」区域的中文对照</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="schema-grid">
+          <div class="schema-card">
+            <h3>发送文本请求体</h3>
+            <p>字段：消息正文、会话编号、对方用户编号、客户端消息编号、是否 AI 回复。</p>
+          </div>
+          <div class="schema-card">
+            <h3>发送表情请求体</h3>
+            <p>字段：表情地址、表情名称、会话编号、对方用户编号、客户端消息编号。</p>
+          </div>
+          <div class="schema-card">
+            <h3>发送图片请求体</h3>
+            <p>字段：图片路径、会话编号、对方用户编号、客户端消息编号。</p>
+          </div>
+          <div class="schema-card">
+            <h3>参数校验错误</h3>
+            <p>当请求字段缺失或格式不正确时返回，包含错误位置与说明。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <div class="panel-head">
+        <div>
+          <h2>调用结果</h2>
+          <p>最近一次接口返回（JSON）</p>
+        </div>
+        <button type="button" id="btn-clear-log">清空</button>
+      </div>
+      <div class="panel-body">
+        <pre class="log" id="result-log">等待操作…</pre>
+      </div>
+    </section>
+
+    <p class="footer">本机调试地址：127.0.0.1:8765 · 机器可读契约：/openapi.json</p>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const logEl = $("result-log");
+    let selectedAccount = "";
+    let selectedConversationId = "";
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function avatarBlock(avatarApi, name) {
+      const label = escapeHtml((name || "?").trim().charAt(0) || "?");
+      const src = escapeHtml(avatarApi || "");
+      if (!src) {
+        return `<div class="avatar-wrap">${label}</div>`;
+      }
+      return `<img class="avatar" src="${src}" alt="${label}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar-wrap',textContent:'${label}'}))" />`;
+    }
+
+    function accountLabel(item, code) {
+      return item.display_name || item.nickname || code;
+    }
+
+    function writeLog(title, payload) {
+      const stamp = new Date().toLocaleString("zh-CN", { hour12: false });
+      logEl.textContent = `[${stamp}] ${title}\n` + JSON.stringify(payload, null, 2);
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options,
+      });
+      const data = await res.json().catch(() => ({ ok: false, error: { message: "响应不是 JSON" } }));
+      if (!res.ok && data && data.error) {
+        throw new Error(data.error.message || `请求失败：${res.status}`);
+      }
+      return data;
+    }
+
+    async function checkHealth() {
+      try {
+        const data = await api("/ping");
+        $("health-dot").className = "dot ok";
+        $("health-text").textContent = "服务正常 · 本机 Runtime 在线";
+        return data;
+      } catch (err) {
+        $("health-dot").className = "dot bad";
+        $("health-text").textContent = "服务不可用";
+        throw err;
+      }
+    }
+
+    function renderAccounts(accounts) {
+      const list = $("account-list");
+      const select = $("account-select");
+      if (!accounts || !accounts.length) {
+        list.innerHTML = '<div class="empty">暂无账号，请先完成凭证采集。</div>';
+        select.innerHTML = '<option value="">暂无账号</option>';
+        return;
+      }
+
+      list.innerHTML = "";
+      select.innerHTML = "";
+      accounts.forEach((item, index) => {
+        const code = item.account_code || item.code || item.id || `账号-${index + 1}`;
+        const enabled = item.enabled !== false;
+        const name = accountLabel(item, code);
+        const card = document.createElement("div");
+        card.className = "account-item" + (code === selectedAccount ? " active" : "");
+        card.innerHTML = `
+          <div class="account-meta">
+            <div class="account-head">
+              ${avatarBlock(item.avatar_api, name)}
+              <div>
+                <div class="account-name">${escapeHtml(name)}</div>
+                <div class="account-code-sub">${escapeHtml(code)}</div>
+              </div>
+            </div>
+            <span class="badge">${item.running ? "托管中" : enabled ? "已启用" : "未启用"}</span>
+          </div>
+          <div class="toolbar">
+            <button type="button" data-action="select" data-code="${escapeHtml(code)}">选中</button>
+            <button type="button" data-action="start" data-code="${escapeHtml(code)}">启动托管</button>
+            <button type="button" data-action="stop" data-code="${escapeHtml(code)}">停止</button>
+            <button type="button" data-action="sync" data-code="${escapeHtml(code)}">同步资料</button>
+            <button type="button" data-action="status" data-code="${escapeHtml(code)}">查看状态</button>
+          </div>
+        `;
+        list.appendChild(card);
+
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = name === code ? code : `${name}（${code}）`;
+        select.appendChild(opt);
+      });
+
+      if (!selectedAccount && accounts.length) {
+        selectedAccount = accounts[0].account_code || accounts[0].code || accounts[0].id || select.value;
+        select.value = selectedAccount;
+      }
+    }
+
+    function renderConversations(conversations) {
+      const box = $("conversation-list");
+      if (!conversations || !conversations.length) {
+        box.innerHTML = '<div class="empty">暂无会话记录。请先启动托管并等待消息同步。</div>';
+        return;
+      }
+      box.innerHTML = "";
+      conversations.forEach((item) => {
+        const cid = item.conversation_id || "";
+        const name = item.display_name || item.peer_uid || "未知用户";
+        const row = document.createElement("div");
+        row.className = "conversation-item" + (cid === selectedConversationId ? " active" : "");
+        row.dataset.cid = cid;
+        row.dataset.peer = item.peer_uid || "";
+        row.innerHTML = `
+          ${avatarBlock(item.avatar_api, name)}
+          <div class="conversation-main">
+            <div class="conversation-name">${escapeHtml(name)}</div>
+            <div class="conversation-sub">${escapeHtml(item.peer_uid || cid)}</div>
+          </div>
+        `;
+        box.appendChild(row);
+      });
+    }
+
+    async function loadConversations() {
+      const code = $("account-select").value || selectedAccount;
+      if (!code) {
+        renderConversations([]);
+        return;
+      }
+      const data = await api(`/accounts/${encodeURIComponent(code)}/conversations?limit=30`);
+      const conversations = data.data?.conversations || [];
+      renderConversations(conversations);
+      writeLog("会话列表", data);
+    }
+
+    async function loadAccounts() {
+      const data = await api("/accounts");
+      const accounts = Array.isArray(data.data) ? data.data : (data.data?.accounts || []);
+      renderAccounts(accounts);
+      if (selectedAccount) {
+        try { await loadConversations(); } catch (_) { /* 会话列表可稍后刷新 */ }
+      }
+    }
+
+    function scheduleProfileRefresh(code, delayMs = 2500) {
+      window.setTimeout(async () => {
+        try {
+          await loadAccounts();
+          if ((selectedAccount || $("account-select").value) === code) {
+            await loadConversations();
+          }
+        } catch (_) { /* 后台刷新失败可忽略 */ }
+      }, delayMs);
+    }
+
+    async function accountAction(action, code) {
+      if (!code) return;
+      if (action === "select") {
+        selectedAccount = code;
+        selectedConversationId = "";
+        $("account-select").value = code;
+        document.querySelectorAll(".account-item").forEach((el) => el.classList.remove("active"));
+        await loadConversations();
+        return;
+      }
+      const map = {
+        start: ["post", `/accounts/${encodeURIComponent(code)}/start`],
+        stop: ["post", `/accounts/${encodeURIComponent(code)}/stop`],
+        sync: ["post", `/accounts/${encodeURIComponent(code)}/refresh_profiles`],
+        status: ["get", `/accounts/${encodeURIComponent(code)}/status`],
+      };
+      const [method, url] = map[action];
+      const data = await api(url, { method: method.toUpperCase() });
+      writeLog(`账号操作：${action} / ${code}`, data);
+      if (action === "start") {
+        scheduleProfileRefresh(code);
+      }
+      if (action === "sync") {
+        selectedAccount = code;
+        $("account-select").value = code;
+        await loadAccounts();
+        await loadConversations();
+        return;
+      }
+      if (action !== "status") await loadAccounts();
+    }
+
+    $("account-list").addEventListener("click", async (event) => {
+      const btn = event.target.closest("button[data-action]");
+      if (!btn) return;
+      try {
+        await accountAction(btn.dataset.action, btn.dataset.code);
+        if (btn.dataset.action === "select") await loadAccounts();
+      } catch (err) {
+        writeLog("操作失败", { message: String(err.message || err) });
+      }
+    });
+
+    $("btn-refresh").addEventListener("click", async () => {
+      try { await loadAccounts(); } catch (err) { writeLog("刷新失败", { message: String(err.message || err) }); }
+    });
+
+    $("btn-stop-all").addEventListener("click", async () => {
+      try {
+        const data = await api("/accounts/stop_all", { method: "POST" });
+        writeLog("全部停止", data);
+        await loadAccounts();
+      } catch (err) {
+        writeLog("全部停止失败", { message: String(err.message || err) });
+      }
+    });
+
+    $("send-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const code = $("account-select").value || selectedAccount;
+      if (!code) {
+        writeLog("发送失败", { message: "请先选择账号" });
+        return;
+      }
+      const body = {
+        text: $("message-text").value.trim(),
+        conversation_id: $("conversation-id").value.trim(),
+        peer_uid: $("peer-uid").value.trim(),
+        client_msg_id: "",
+        is_ai_reply: false,
+      };
+      try {
+        const data = await api(`/accounts/${encodeURIComponent(code)}/send/text`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        writeLog("发送文本私信", data);
+      } catch (err) {
+        writeLog("发送失败", { message: String(err.message || err) });
+      }
+    });
+
+    $("btn-load-conversations").addEventListener("click", async () => {
+      try { await loadConversations(); } catch (err) {
+        writeLog("拉取会话失败", { message: String(err.message || err) });
+      }
+    });
+
+    $("btn-reload-conversations").addEventListener("click", async () => {
+      try { await loadConversations(); } catch (err) {
+        writeLog("拉取会话失败", { message: String(err.message || err) });
+      }
+    });
+
+    $("conversation-list").addEventListener("click", (event) => {
+      const row = event.target.closest(".conversation-item");
+      if (!row) return;
+      selectedConversationId = row.dataset.cid || "";
+      $("conversation-id").value = selectedConversationId;
+      $("peer-uid").value = row.dataset.peer || "";
+      document.querySelectorAll(".conversation-item").forEach((el) => el.classList.remove("active"));
+      row.classList.add("active");
+    });
+
+    $("btn-clear-log").addEventListener("click", () => {
+      logEl.textContent = "等待操作…";
+    });
+
+  $("account-select").addEventListener("change", async (event) => {
+      selectedAccount = event.target.value;
+      selectedConversationId = "";
+      try { await loadConversations(); } catch (_) { /* ignore */ }
+    });
+
+    (async function init() {
+      try {
+        await checkHealth();
+        await loadAccounts();
+      } catch (err) {
+        writeLog("初始化失败", { message: String(err.message || err) });
+      }
+    })();
+  </script>
+</body>
+</html>

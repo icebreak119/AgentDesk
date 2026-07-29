@@ -35,8 +35,19 @@ AgentDesk 是基于 **AgentTeams** 构建的多 Agent 私域客服自治工作�
 ## 当前进展
 
 - ✅ 初赛方案设计与 AgentTeams 映射
-- ✅ 抖音私信托管与发送核验（业务底座）
+- ✅ 抖音 Channel Runtime 源码（`runtime/douyin/`，可独立启动 8765）
 - 🔄 企微适配、AgentTeams 可执行代码包（复赛）
+
+## Runtime 源码
+
+```powershell
+cd runtime/douyin
+pip install -r requirements.txt
+$env:PYTHONPATH = (Get-Location).Path
+python -m channels.douyin_reverse_ipc.http_server --db-path channels\douyin_all_user\reverse_runtime\_douyin_im_accounts.db
+```
+
+详见 [runtime/douyin/README.md](runtime/douyin/README.md)。
 
 ## License
 

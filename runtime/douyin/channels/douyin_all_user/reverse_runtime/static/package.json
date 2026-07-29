@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "dependencies": {
+    "jsrsasign": "^11.1.3"
+  }
+}

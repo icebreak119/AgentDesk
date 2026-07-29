@@ -1,0 +1,8 @@
+# Runtime artifacts
+runtime/douyin/channels/douyin_all_user/reverse_runtime/*.db
+runtime/douyin/channels/douyin_all_user/reverse_runtime/profiles/
+runtime/douyin/channels/douyin_all_user/reverse_runtime/logs/
+runtime/douyin/channels/douyin_all_user/reverse_runtime/.env*
+__pycache__/
+*.pyc
+.venv/

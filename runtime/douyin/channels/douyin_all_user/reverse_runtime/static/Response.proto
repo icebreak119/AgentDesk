@@ -1,0 +1,119 @@
+syntax = "proto3";
+message Response {
+    int32 cmd = 1;
+    int64 sequence_id = 2;
+    string error_desc = 3;
+    string message = 4;
+    int64 inbox_type = 5;
+    ResponseBody body = 6;
+}
+
+message ResponseBody {
+    oneof body {
+        NewMessageNotify new_message_notify = 500;
+        MessagesInConversationResponseBody messages_in_conversation_body = 301;
+        GetConversationInfoListV2ResponseBody create_conversation_v2_body = 609;
+        GetConversationInfoListV2ResponseBody get_conversation_info_list_v2_response_body = 610;
+        GetStrangerConversationListResponseBody get_stranger_conversation_body = 1001;
+        GetStrangerMessagesResponseBody get_stranger_messages_body = 1002;
+        GetUserConversationListResponseBody get_conversation_list_body = 2006;
+    }
+}
+
+message NewMessageNotify {
+    string conversation_id = 2;
+    int32 conversation_type = 3;
+    int32 notify_type = 4;
+    MessageBody message = 5;
+}
+
+message MessageBody {
+    string conversation_id = 1;
+    int32 conversation_type = 2;
+    int64 server_message_id = 3;
+    int64 index_in_conversation = 4;
+    int64 conversation_short_id = 5;
+    int32 message_type = 6;
+    int64 sender = 7;
+    string content = 8;
+    int64 create_time = 10;
+}
+
+message GetConversationInfoListV2ResponseBody {
+    repeated GetConversationInfoV2Response conversation_info_list = 1;
+}
+
+message GetConversationInfoV2Response {
+    string conversation_id = 1;
+    int64 conversation_short_id = 2;
+    int32 conversation_type = 3;
+    string ticket = 4;
+}
+
+message MessagesInConversationResponseBody {
+    repeated MessageBody messages = 1;
+    int64 next_cursor = 2;
+    bool has_more = 3;
+}
+
+message Participant {
+    int64 user_id = 1;
+    int64 sort_order = 2;
+    int32 role = 3;
+    string alias = 4;
+    string sec_uid = 5;
+}
+
+message ParticipantsPage {
+    repeated Participant participants = 1;
+    bool has_more = 2;
+    int64 cursor = 3;
+}
+
+message ConversationCoreInfo {
+    string conversation_id = 1;
+    int64 conversation_short_id = 2;
+    int32 conversation_type = 3;
+    string name = 5;
+    int32 inbox_type = 8;
+    int64 create_time = 18;
+    int32 mode = 16;
+}
+
+message ConversationInfoV2 {
+    string conversation_id = 1;
+    int64 conversation_short_id = 2;
+    int32 conversation_type = 3;
+    string ticket = 4;
+    ParticipantsPage first_page_participants = 6;
+    int32 participants_count = 7;
+    bool is_participant = 8;
+    int32 inbox_type = 9;
+    int32 badge_count = 10;
+    ConversationCoreInfo conversation_core_info = 50;
+}
+
+message GetUserConversationListResponseBody {
+    repeated ConversationInfoV2 list = 1;
+    bool has_more = 2;
+    int64 next_cursor = 3;
+}
+
+message StrangerConversation {
+    int64 conversation_short_id = 1;
+    int32 unread = 2;
+    MessageBody last_message = 3;
+    string conversation_id = 4;
+    repeated Participant participants = 5;
+}
+
+message GetStrangerConversationListResponseBody {
+    int64 next_cursor = 1;
+    bool has_more = 2;
+    int32 total_unread = 3;
+    repeated StrangerConversation conversation_list = 4;
+}
+
+message GetStrangerMessagesResponseBody {
+    repeated MessageBody messages = 3;
+}
