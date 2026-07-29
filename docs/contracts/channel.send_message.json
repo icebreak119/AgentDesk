@@ -1,21 +1,21 @@
 {
-  "name": "channel.send_message",
-  "description": "向指定渠道会话发送消息（AgentDesk MCP 等价契约）",
-  "input": {
+  "名称": "channel.send_message",
+  "说明": "向指定渠道会话发送消息（AgentDesk MCP 等价契约）",
+  "输入": {
     "channel": "douyin|qywx",
     "profile_id": "string",
     "session_ref": "string",
     "content": "string",
     "idempotency_key": "string"
   },
-  "output": {
+  "输出": {
     "send_id": "string",
     "status": "ok|failed",
     "receipt_raw": "object",
     "ts": "iso8601"
   },
-  "auth": "profile scoped token",
-  "retry": "max 2 with backoff",
-  "audit": "task_id + profile_id + tool_name",
-  "runtime_impl": "channels/douyin_reverse_ipc HTTP POST /v1/accounts/{account_code}/messages/text"
+  "鉴权": "profile 级令牌",
+  "重试": "最多 2 次退避",
+  "审计": "task_id + profile_id + tool_name",
+  "运行时实现": "channels/douyin_reverse_ipc HTTP POST /accounts/{account_code}/send/text"
 }
