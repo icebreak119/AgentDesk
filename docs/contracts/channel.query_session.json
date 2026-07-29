@@ -1,0 +1,18 @@
+{
+  "name": "channel.query_session",
+  "description": "查询指定会话上下文（AgentDesk MCP 等价契约）",
+  "input": {
+    "channel": "douyin|qywx",
+    "profile_id": "string",
+    "session_ref": "string"
+  },
+  "output": {
+    "customer_ref": "string",
+    "session_state": "string",
+    "context_vars": "object",
+    "degraded": "boolean"
+  },
+  "auth": "profile scoped token",
+  "retry": "read idempotent",
+  "runtime_impl": "channels/douyin_reverse_ipc HTTP GET session endpoints"
+}

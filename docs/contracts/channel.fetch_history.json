@@ -1,0 +1,18 @@
+{
+  "name": "channel.fetch_history",
+  "description": "获取会话历史消息（AgentDesk MCP 等价契约）",
+  "input": {
+    "channel": "douyin|qywx",
+    "profile_id": "string",
+    "session_ref": "string",
+    "limit": "integer",
+    "since_ts": "iso8601|null"
+  },
+  "output": {
+    "messages": "Message[]",
+    "degraded": "boolean"
+  },
+  "auth": "profile scoped token",
+  "retry": "read idempotent",
+  "runtime_impl": "channels/douyin_reverse_ipc HTTP GET history endpoints"
+}
