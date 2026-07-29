@@ -89,7 +89,7 @@
 
 ## 7. 演示总结话术（可直接念）
 
-> AgentDesk 不是单 Bot 聊天，而是基于 AgentTeams 的多 Agent 私域客服自治基础设施。  
+> AgentDesk 不是单 Bot 聊天，而是基于 AgentTeams 的多 Agent 私域客服自治工作台。  
 > 初赛我们已完成抖音渠道的真实接入与发送核验能力，并给出完整的 Agent、Skill 与闭环设计。  
 > 复赛将提交可执行 AgentTeams 代码包，补齐 Task Runtime、审批后端与 Trace 工作台联调。
 

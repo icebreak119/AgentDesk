@@ -27,7 +27,7 @@ BODY = ParagraphStyle("Body", parent=styles["BodyText"], fontName="STSong-Light"
 BULLET = ParagraphStyle("Bullet", parent=BODY, leftIndent=12, spaceAfter=5)
 
 SLIDES = [
-    ("P1", "私域客服自治闭环（AgentDesk）", [
+    ("P1", "私域客服自治工作台（AgentDesk）", [
         "赛道：新智基座（Agent Infra）",
         "方向：智能客服自主闭环",
         "团队：AgentDesk",
