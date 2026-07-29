@@ -1,0 +1,15 @@
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
+{"task_id": "task_001", "agent": "ChannelIngress", "ts": "2026-07-29T23:00:53+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "5c9c697aa5a4a847", "output": {"session_id": "0:1:1550776822954327:4345741094434680"}}
+{"task_id": "task_001", "agent": "TriageGuard", "ts": "2026-07-29T23:00:53+08:00", "skill": "IntentTriage", "status": "ok", "need_approval": false, "input_hash": "4afd8d04647bb73d", "output": {"intent": "consult", "priority": "low"}}
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "triaging", "to": "planning"}
+{"task_id": "task_001", "agent": "TriageGuard", "ts": "2026-07-29T23:00:53+08:00", "skill": "ReplyPlan", "status": "ok", "input_hash": "8a99e4ce6bb7c9ae", "output": {"action_type": "reply"}}
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "planning", "to": "acting"}
+{"task_id": "task_001", "agent": "ActVerify", "ts": "2026-07-29T23:00:53+08:00", "skill": "ChannelSend", "status": "ok", "mode": "mock", "input_hash": "8aebc8e40cd1ea7b", "output": {"send_id": "mock_task_001"}}
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "acting", "to": "verifying"}
+{"task_id": "task_001", "agent": "ActVerify", "ts": "2026-07-29T23:00:53+08:00", "skill": "OutcomeVerify", "status": "ok", "output": {"pass": true}}
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "verifying", "to": "done"}
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "planning", "to": "acting"}
+{"task_id": "task_001", "agent": "ActVerify", "ts": "2026-07-29T23:00:53+08:00", "skill": "ChannelSend", "status": "ok", "mode": "mock", "input_hash": "8aebc8e40cd1ea7b", "output": {"send_id": "mock_task_001"}}
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "acting", "to": "verifying"}
+{"task_id": "task_001", "agent": "ActVerify", "ts": "2026-07-29T23:00:53+08:00", "skill": "OutcomeVerify", "status": "ok", "output": {"pass": true}}
+{"task_id": "task_001", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "verifying", "to": "done"}

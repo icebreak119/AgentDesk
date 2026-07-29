@@ -1,0 +1,13 @@
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:51+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
+{"task_id": "task_002", "agent": "ChannelIngress", "ts": "2026-07-29T23:00:51+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "8bb42d04aae02af4", "output": {"session_id": "0:1:1550776822954327:4345741094434680"}}
+{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-07-29T23:00:51+08:00", "skill": "IntentTriage", "status": "ok", "need_approval": true, "input_hash": "23cb915c13d03ef4", "output": {"intent": "refund_or_account_change", "priority": "high"}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:51+08:00", "event": "state_transition", "from": "triaging", "to": "planning"}
+{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-07-29T23:00:51+08:00", "skill": "ReplyPlan", "status": "ok", "input_hash": "d6fef69468c767fa", "output": {"action_type": "escalate"}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:51+08:00", "event": "state_transition", "from": "planning", "to": "suspended"}
+{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-07-29T23:00:51+08:00", "event": "approval_required", "status": "suspended", "output": {"risk_tag": "high"}}
+{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-07-29T23:00:51+08:00", "event": "approval_granted", "status": "ok", "output": {"approval_token": "appr_tok..."}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:51+08:00", "event": "state_transition", "from": "suspended", "to": "acting"}
+{"task_id": "task_002", "agent": "ActVerify", "ts": "2026-07-29T23:00:51+08:00", "skill": "ChannelSend", "status": "ok", "mode": "mock", "input_hash": "5ee51fcd55ea4518", "output": {"send_id": "mock_task_002"}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:51+08:00", "event": "state_transition", "from": "acting", "to": "verifying"}
+{"task_id": "task_002", "agent": "ActVerify", "ts": "2026-07-29T23:00:51+08:00", "skill": "OutcomeVerify", "status": "ok", "output": {"pass": true}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:51+08:00", "event": "state_transition", "from": "verifying", "to": "done"}

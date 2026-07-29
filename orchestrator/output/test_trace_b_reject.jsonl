@@ -1,0 +1,8 @@
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
+{"task_id": "task_002", "agent": "ChannelIngress", "ts": "2026-07-29T23:00:53+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "8bb42d04aae02af4", "output": {"session_id": "0:1:1550776822954327:4345741094434680"}}
+{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-07-29T23:00:53+08:00", "skill": "IntentTriage", "status": "ok", "need_approval": true, "input_hash": "313cdf6d26f91087", "output": {"intent": "refund_or_account_change", "priority": "high"}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "triaging", "to": "planning"}
+{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-07-29T23:00:53+08:00", "skill": "ReplyPlan", "status": "ok", "input_hash": "d6fef69468c767fa", "output": {"action_type": "escalate"}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "planning", "to": "suspended"}
+{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-07-29T23:00:53+08:00", "event": "approval_required", "status": "suspended", "output": {"risk_tag": "high"}}
+{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-07-29T23:00:53+08:00", "event": "approval_rejected", "status": "failed"}
