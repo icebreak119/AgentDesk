@@ -1,0 +1,32 @@
+{"task_id": "task_c_001", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
+{"task_id": "task_c_001", "agent": "ChannelIngress", "ts": "2026-08-02T13:12:52+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "b46a5e7a9a4e3e51", "output": {"session_id": "dy-conv-001", "source_event_id": "dy-msg-001", "canonical_customer_id": "a81f9abd8dbbe4eddf77"}}
+{"task_id": "task_c_001", "agent": "TriageGuard", "ts": "2026-08-02T13:12:52+08:00", "skill": "IntentTriage", "status": "ok", "need_approval": false, "input_hash": "c1fec77b0c17d976", "output": {"intent": "consult", "priority": "low"}}
+{"task_id": "task_c_001", "agent": "CaseLearning", "ts": "2026-08-02T13:12:52+08:00", "skill": "CaseKnowledgeRetrieve", "status": "ok", "output": {"hit_count": 0}}
+{"task_id": "task_c_001", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "triaging", "to": "planning"}
+{"task_id": "task_c_001", "agent": "TriageGuard", "ts": "2026-08-02T13:12:52+08:00", "skill": "ReplyPlan", "status": "ok", "input_hash": "7a00943c88ed12ad", "output": {"action_type": "reply", "citation_count": 0}}
+{"task_id": "task_c_001", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "planning", "to": "acting"}
+{"task_id": "task_c_001", "agent": "ActVerify", "ts": "2026-08-02T13:12:52+08:00", "skill": "ChannelSend", "status": "ok", "mode": "mock", "input_hash": "c7a57f4c210654d1", "output": {"send_id": "mock_task_c_001"}}
+{"task_id": "task_c_001", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "acting", "to": "verifying"}
+{"task_id": "task_c_001", "agent": "ActVerify", "ts": "2026-08-02T13:12:52+08:00", "skill": "OutcomeVerify", "status": "ok", "output": {"pass": true, "evidence_type": "receipt_and_content"}}
+{"task_id": "task_c_001", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "verifying", "to": "confirming"}
+{"task_id": "task_c_001", "agent": "ActVerify", "ts": "2026-08-02T13:12:52+08:00", "skill": "CustomerConfirm", "status": "confirmed", "output": {"needs_follow_up": false}}
+{"task_id": "task_c_001", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "confirming", "to": "done"}
+{"task_id": "task_c_001", "agent": "CaseLearning", "ts": "2026-08-02T13:12:52+08:00", "skill": "CaseDigest", "status": "ok", "output": {"case_id": "case_task_c_001", "resolution": "done", "privacy_checked": true}}
+{"task_id": "task_c_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
+{"task_id": "task_c_002", "agent": "ChannelIngress", "ts": "2026-08-02T13:12:52+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "2b2a42fabe7061cf", "output": {"session_id": "wecom-conv-009", "source_event_id": "wecom-msg-009", "canonical_customer_id": "a81f9abd8dbbe4eddf77"}}
+{"task_id": "task_c_002", "agent": "ChannelIngress", "ts": "2026-08-02T13:12:52+08:00", "event": "duplicate_linked", "status": "deduplicated", "output": {"duplicate_of_task_id": "task_c_001", "duplicate_of_channel": "douyin"}}
+{"task_id": "task_c_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "triaging", "to": "deduplicated"}
+{"task_id": "task_c_003", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
+{"task_id": "task_c_003", "agent": "ChannelIngress", "ts": "2026-08-02T13:12:52+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "8ad02c6fb0352a76", "output": {"session_id": "wecom-conv-009", "source_event_id": "wecom-msg-010", "canonical_customer_id": "a81f9abd8dbbe4eddf77"}}
+{"task_id": "task_c_003", "agent": "TriageGuard", "ts": "2026-08-02T13:12:52+08:00", "skill": "IntentTriage", "status": "ok", "need_approval": false, "input_hash": "a666e80289a0890c", "output": {"intent": "consult", "priority": "low"}}
+{"task_id": "task_c_003", "agent": "CaseLearning", "ts": "2026-08-02T13:12:52+08:00", "skill": "CaseKnowledgeRetrieve", "status": "ok", "output": {"hit_count": 1}}
+{"task_id": "task_c_003", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "triaging", "to": "planning"}
+{"task_id": "task_c_003", "agent": "TriageGuard", "ts": "2026-08-02T13:12:52+08:00", "skill": "ReplyPlan", "status": "ok", "input_hash": "df4a7254f5800fcf", "output": {"action_type": "reply", "citation_count": 1}}
+{"task_id": "task_c_003", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "planning", "to": "acting"}
+{"task_id": "task_c_003", "agent": "ActVerify", "ts": "2026-08-02T13:12:52+08:00", "skill": "ChannelSend", "status": "ok", "mode": "mock", "input_hash": "c7a57f4c210654d1", "output": {"send_id": "mock_task_c_003"}}
+{"task_id": "task_c_003", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "acting", "to": "verifying"}
+{"task_id": "task_c_003", "agent": "ActVerify", "ts": "2026-08-02T13:12:52+08:00", "skill": "OutcomeVerify", "status": "ok", "output": {"pass": true, "evidence_type": "receipt_and_content"}}
+{"task_id": "task_c_003", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "verifying", "to": "confirming"}
+{"task_id": "task_c_003", "agent": "ActVerify", "ts": "2026-08-02T13:12:52+08:00", "skill": "CustomerConfirm", "status": "confirmed", "output": {"needs_follow_up": false}}
+{"task_id": "task_c_003", "agent": "SessionTL", "ts": "2026-08-02T13:12:52+08:00", "event": "state_transition", "from": "confirming", "to": "done"}
+{"task_id": "task_c_003", "agent": "CaseLearning", "ts": "2026-08-02T13:12:52+08:00", "skill": "CaseDigest", "status": "ok", "output": {"case_id": "case_task_c_003", "resolution": "done", "privacy_checked": true}}

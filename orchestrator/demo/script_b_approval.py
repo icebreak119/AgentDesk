@@ -22,7 +22,7 @@ def run(
     reject: bool = False,
 ):
     duty_manager = DutyManager()
-    session_tl = SessionTL()
+    session_tl = SessionTL(knowledge_path=output.with_name("case_knowledge.jsonl"))
     mode = "live" if live else "mock"
 
     ctx = duty_manager.create_task(
@@ -31,8 +31,12 @@ def run(
         channel="douyin",
         raw_event={
             "conversation_id": "0:1:1550776822954327:4345741094434680",
+            "event_id": "dy-demo-refund-001",
+            "customer_id": "customer-demo-002",
+            "ts": "2026-08-02T09:05:00+08:00",
             "text": "我要退款，改一下账户",
             "sender_name": "李女士",
+            "customer_feedback": "谢谢，已经收到处理进度。" if not live else "",
         },
         mode=mode,
     )
@@ -45,6 +49,7 @@ def run(
         if reject:
             duty_manager.reject(ctx)
             trace.emit(ctx.task_id, "DutyManager", event="approval_rejected", status="failed")
+            session_tl.publish_case(ctx, trace)
             print(f"trace written: {output}")
             print(json.dumps(ctx.to_dict(), ensure_ascii=False, indent=2))
             return ctx
@@ -73,7 +78,7 @@ def main() -> int:
     ctx = run(live=args.live, output=args.output, reject=args.reject, base_url=args.base_url)
     if args.reject:
         return 0 if ctx.state == "failed" else 1
-    return 0 if ctx.state == "done" else 1
+    return 0 if ctx.state in {"done", "awaiting_customer_confirmation"} else 1
 
 
 if __name__ == "__main__":

@@ -5,14 +5,14 @@ skills:
   session_normalize:
     display_name: SessionNormalize
     version: "0.1"
-    entrypoint: null
+    entrypoint: session_normalize/v0.1/skill.py
     schema: session_normalize/v0.1/schema.json
     examples:
       - session_normalize/v0.1/examples/douyin_inbound.json
     caller_agents:
       - agent.channel_ingress
-    implementation: runtime 适配层（Phase 3 orchestrator 调用）
-    runnable: false
+    implementation: 统一 SessionEvent 归一与跨渠道去重键生成
+    runnable: true
 
   intent_triage:
     display_name: IntentTriage
@@ -54,11 +54,35 @@ skills:
   outcome_verify:
     display_name: OutcomeVerify
     version: "0.1"
-    entrypoint: null
+    entrypoint: outcome_verify/v0.1/skill.py
     schema: outcome_verify/v0.1/schema.json
     examples:
       - outcome_verify/v0.1/examples/verify_ok.json
     caller_agents:
       - agent.act_verify
-    implementation: runtime/douyin 回执 + DOM 二次校验
-    runnable: false
+    implementation: 回执与内容一致性校验（Runtime 可注入真实探针）
+    runnable: true
+
+  customer_confirm:
+    display_name: CustomerConfirm
+    version: "0.1"
+    entrypoint: customer_confirm/v0.1/skill.py
+    schema: customer_confirm/v0.1/schema.json
+    examples:
+      - customer_confirm/v0.1/examples/confirmed.json
+    caller_agents:
+      - agent.act_verify
+    implementation: 客户反馈确认、待跟进与升级判定
+    runnable: true
+
+  case_digest:
+    display_name: CaseDigest
+    version: "0.1"
+    entrypoint: case_digest/v0.1/skill.py
+    schema: case_digest/v0.1/schema.json
+    examples:
+      - case_digest/v0.1/examples/confirmed_consult.json
+    caller_agents:
+      - agent.case_learning
+    implementation: 脱敏案例复盘、标签化归档与历史案例检索
+    runnable: true

@@ -101,6 +101,15 @@ def test_http_ping_and_lifecycle(tmp_path: Path):
     assert stopped.json()["data"]["running"] is False
 
 
+def test_http_list_accounts_allows_empty_database(tmp_path: Path):
+    client = TestClient(create_app(str(tmp_path / "empty.db")))
+
+    response = client.get("/accounts")
+
+    assert response.status_code == 200
+    assert response.json()["data"] == {"accounts": []}
+
+
 def test_http_send_text_mocked(tmp_path: Path, monkeypatch):
     db = tmp_path / "im.db"
     _seed_account(db)
@@ -112,7 +121,7 @@ def test_http_send_text_mocked(tmp_path: Path, monkeypatch):
     )
     monkeypatch.setattr(
         "channels.douyin_reverse_ipc.send_service._resolve_conversation",
-        lambda auth, conversation_id, peer_uid: ("cid", 1, "ticket", peer_uid or "200"),
+        lambda auth, conversation_id, peer_uid, **_: ("cid", 1, "ticket", peer_uid or "200"),
     )
     monkeypatch.setattr(
         "channels.douyin_reverse_ipc.send_service._validate_send",
@@ -141,6 +150,39 @@ def test_http_send_text_mocked(tmp_path: Path, monkeypatch):
     bad = client.post("/accounts/acc_001/send/text", json={"text": "hello"})
     assert bad.status_code == 400
     assert bad.json()["error"]["code"] == "peer_required"
+
+
+def test_http_login_job_routes(tmp_path: Path, monkeypatch):
+    db = tmp_path / "im.db"
+    _seed_account(db)
+    client = TestClient(create_app(str(db)))
+
+    monkeypatch.setattr(
+        "channels.douyin_reverse_ipc.login_service.start_login_job",
+        lambda db_path, account_code, **kwargs: {
+            "job_id": "login_test",
+            "account_code": account_code,
+            "status": "queued",
+            "db_path": db_path,
+            "options": kwargs,
+        },
+    )
+    monkeypatch.setattr(
+        "channels.douyin_reverse_ipc.login_service.get_latest_login_job",
+        lambda account_code: {"account_code": account_code, "status": "queued"},
+    )
+    monkeypatch.setattr(
+        "channels.douyin_reverse_ipc.login_service.get_login_job",
+        lambda job_id: {"job_id": job_id, "status": "queued"},
+    )
+
+    resp = client.post("/accounts/acc_001/login/start", json={"timeout": 60})
+    assert resp.status_code == 200
+    assert resp.json()["data"]["job_id"] == "login_test"
+
+    status = client.get("/accounts/acc_001/login/status")
+    assert status.status_code == 200
+    assert status.json()["data"]["status"] == "queued"
 
 
 def test_http_refresh_profiles_mocked(tmp_path: Path, monkeypatch):

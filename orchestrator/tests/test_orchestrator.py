@@ -46,6 +46,7 @@ def test_task_context_roundtrip():
     restored = TaskContext.from_dict(json.loads(ctx.to_json()))
     assert restored.task_id == "task_x"
     assert restored.triage_result["intent"] == "consult"
+    assert restored.knowledge_hits == []
 
 
 def test_script_a_consult_trace():
@@ -59,6 +60,10 @@ def test_script_a_consult_trace():
     triage = next(e for e in events if e.get("skill") == "IntentTriage")
     assert triage.get("need_approval") is False
     assert any(e.get("event") == "state_transition" for e in events)
+    assert len([e for e in events if e.get("skill") == "ChannelSend"]) == 1
+    assert len([e for e in events if e.get("skill") == "OutcomeVerify"]) == 1
+    assert len([e for e in events if e.get("skill") == "CustomerConfirm"]) == 1
+    assert len([e for e in events if e.get("skill") == "CaseDigest"]) == 1
 
 
 def test_script_b_approval_suspend_and_resume():
@@ -85,3 +90,35 @@ def test_script_b_reject():
     assert proc.returncode == 0, proc.stderr
     events = _read_trace(output)
     assert any(e.get("event") == "approval_rejected" for e in events)
+    assert any(e.get("skill") == "CaseDigest" for e in events)
+
+
+def test_script_c_multichannel_dedupe_confirmation_and_case_reuse(tmp_path: Path):
+    output = tmp_path / "trace_c.jsonl"
+    knowledge = tmp_path / "case_knowledge.jsonl"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "orchestrator.demo.script_c_multichannel_case",
+            "-o",
+            str(output),
+            "--knowledge-output",
+            str(knowledge),
+        ],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    events = _read_trace(output)
+    assert any(e.get("event") == "duplicate_linked" for e in events)
+    assert any(e.get("skill") == "CustomerConfirm" and e.get("status") == "confirmed" for e in events)
+    retrieve = [e for e in events if e.get("skill") == "CaseKnowledgeRetrieve"]
+    assert retrieve and retrieve[-1].get("output", {}).get("hit_count", 0) >= 1
+    records = _read_trace(knowledge)
+    assert len(records) == 2
+    assert all(record["privacy"]["contains_customer_content"] is False for record in records)

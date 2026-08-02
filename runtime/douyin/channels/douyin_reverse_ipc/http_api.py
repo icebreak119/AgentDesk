@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from channels.douyin_reverse_ipc.account_slots import AccountSlotManager
 from channels.douyin_reverse_ipc.console_page import register_console_routes
 from channels.douyin_reverse_ipc.errors import RpcError
-from channels.douyin_reverse_ipc import profile_service
+from channels.douyin_reverse_ipc import login_service, profile_service
 from channels.douyin_reverse_ipc.supervisor import ReverseSupervisor
 
 
@@ -42,6 +42,15 @@ class SendImageBody(BaseModel):
     conversation_id: str = Field("", title="会话编号")
     peer_uid: str = Field("", title="对方用户编号")
     client_msg_id: str = Field("", title="客户端消息编号")
+
+
+class LoginCollectBody(BaseModel):
+    model_config = ConfigDict(title="托管账号登录采集请求体")
+
+    timeout: int = Field(300, ge=30, le=1800, title="最长等待秒数")
+    browser_channel: str = Field("", title="浏览器通道，如 chrome 或 msedge")
+    headless: bool = Field(False, title="是否无头模式")
+    skip_health_check: bool = Field(False, title="是否跳过登录健康检查")
 
 
 def create_app(
@@ -151,6 +160,27 @@ def create_app(
     @app.post("/accounts/{account_code}/refresh_profiles", summary="同步账号与会话资料", tags=["账号托管"])
     def refresh_profiles(account_code: str):
         return _ok(_run("refresh_profiles", {"account_code": account_code}))
+
+    @app.post("/accounts/{account_code}/login/start", summary="发起托管账号登录采集", tags=["账号托管"])
+    def start_login_collect(account_code: str, body: LoginCollectBody):
+        return _ok(
+            login_service.start_login_job(
+                supervisor.db_path,
+                account_code,
+                timeout_seconds=body.timeout,
+                browser_channel=body.browser_channel,
+                headless=body.headless,
+                skip_health_check=body.skip_health_check,
+            )
+        )
+
+    @app.get("/accounts/{account_code}/login/status", summary="最近登录采集状态", tags=["账号托管"])
+    def login_collect_status(account_code: str):
+        return _ok(login_service.get_latest_login_job(account_code))
+
+    @app.get("/login/jobs/{job_id}", summary="登录采集任务状态", tags=["账号托管"])
+    def login_job(job_id: str):
+        return _ok(login_service.get_login_job(job_id))
 
     @app.post("/accounts/stop_all", summary="停止全部账号", tags=["账号托管"])
     def stop_all():

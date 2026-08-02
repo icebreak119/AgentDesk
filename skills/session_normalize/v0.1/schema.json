@@ -5,17 +5,19 @@
     "type": "object",
     "required": ["channel", "profile_id", "raw_event"],
     "properties": {
-      "channel": { "type": "string", "enum": ["douyin", "qywx"] },
+      "channel": { "type": "string", "enum": ["douyin", "qywx", "wecom", "email", "webchat", "call_transcript"] },
       "profile_id": { "type": "string" },
       "raw_event": { "type": "object" }
     }
   },
   "output": {
     "type": "object",
-    "required": ["session_id", "customer_ref", "content", "content_type", "ts", "dedupe_key"],
+    "required": ["session_id", "source_event_id", "customer_ref", "canonical_customer_id", "content", "content_type", "ts", "dedupe_key"],
     "properties": {
       "session_id": { "type": "string" },
+      "source_event_id": { "type": "string" },
       "customer_ref": { "type": "string" },
+      "canonical_customer_id": { "type": "string" },
       "content": { "type": "string" },
       "content_type": { "type": "string" },
       "ts": { "type": "string" },

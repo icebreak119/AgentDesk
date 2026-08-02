@@ -11,7 +11,9 @@
 | IntentTriage | v0.1 | 意图识别与分级 | TriageGuard | `skills/intent_triage/v0.1/` ✅ 可运行 | 规则+模型可复用 |
 | ReplyPlan | v0.1 | 回复/处置方案生成 | TriageGuard | `skills/reply_plan/v0.1/` ✅ 可运行 | 知识增强、风险标签 |
 | ChannelSend | v0.1 | 渠道消息发送 | ActVerify | `skills/channel_send/v0.1/` + runtime | 幂等、防串号 |
-| OutcomeVerify | v0.1 | 结果核验与证据 | ActVerify | `skills/outcome_verify/v0.1/` + runtime | 生产级可审计 |
+| OutcomeVerify | v0.1 | 结果核验与证据 | ActVerify | `skills/outcome_verify/v0.1/` + runtime | 可审计证据输出 |
+| CustomerConfirm | v0.1 | 客户反馈确认与升级判定 | ActVerify | `skills/customer_confirm/v0.1/` ✅ 可运行 | 处置闭环不止于发送 |
+| CaseDigest | v0.1 | 脱敏案例归档与标签复用 | CaseLearning | `skills/case_digest/v0.1/` ✅ 可运行 | 结构化经验沉淀 |
 
 ---
 
@@ -23,7 +25,7 @@
 | 输入 Schema | `{ channel: string, raw_event: object, profile_id: string }` |
 | 输出 Schema | `{ session_id, customer_ref, content, content_type, ts, dedupe_key }` |
 | 调用条件 | 任意渠道入站消息到达 |
-| 依赖工具 | 抖音 Runtime / 企微 Hook 入站适配器 |
+| 依赖工具 | 抖音 Runtime；企微统一事件契约仅用于离线演示 |
 | 失败处理 | 记录日志并丢弃；不进入后续链路 |
 | 验证方式 | 字段完整性校验；dedupe_key 去重 |
 | 安全边界 | 不修改全局入口 URL；cid 仅作会话级标识 |
@@ -38,7 +40,7 @@
 | 输入 Schema | `{ session_event, history: Message[] }` |
 | 输出 Schema | `{ intent, priority, risk_tag, need_approval, confidence }` |
 | 调用条件 | SessionEvent 归一成功后 |
-| 依赖工具 | LLM；规则引擎（敏感词/高风险模板） |
+| 依赖工具 | 规则引擎（敏感词/高风险模板，初赛参考实现）；后续可替换为 LLM |
 | 失败处理 | confidence 低则默认升级人工 |
 | 验证方式 | 规则命中与模型输出一致性检查 |
 | 安全边界 | 不得触发任何外部写操作 |
@@ -53,7 +55,7 @@
 | 输入 Schema | `{ session_event, triage_result, knowledge_hits[] }` |
 | 输出 Schema | `{ draft_text, action_type, risk_tag, citations[] }` |
 | 调用条件 | triage 完成且非立即升级 |
-| 依赖工具 | LLM；知识检索（FAQ/历史案例） |
+| 依赖工具 | 版本化回复模板与标签化历史案例检索（初赛参考实现）；后续可替换为 LLM / 完整 RAG |
 | 失败处理 | 无有效草案 → 转人工 |
 | 验证方式 | 草案非空；高风险不得附带执行令牌 |
 | 安全边界 | 高风险仅出方案，不附带执行令牌 |
@@ -68,7 +70,7 @@
 | 输入 Schema | `{ channel, profile_id, session_ref, content, idempotency_key }` |
 | 输出 Schema | `{ send_id, status, receipt_raw, ts }` |
 | 调用条件 | 低风险自动路径，或高风险已获 ApprovalToken |
-| 依赖工具 | 抖音 send_im_message；企微 send_text_message |
+| 依赖工具 | 抖音 send_im_message；企微发送仅保留工具契约，未声明真实适配器已接入 |
 | 失败处理 | 有限重试；ticket 失效则清缓存重 resolve |
 | 验证方式 | 回执 status=ok；profile_id 与目标会话一致 |
 | 安全边界 | 必须带 profile_id；禁止跨账号发送 |
@@ -89,6 +91,38 @@
 | 安全边界 | 候选必须唯一；不一致则失败 |
 | 复用价值 | 核验协议可独立开源，适用于多渠道客服 |
 | 与多 Agent 关系 | ActVerify 调用，结果回传 DutyManager/SessionTL |
+
+---
+
+## 6. CustomerConfirmSkill
+
+| 项 | 内容 |
+|---|---|
+| 用途 | 对处置后的客户反馈做确认、待跟进或升级判定 |
+| 输入 Schema | `{ task_id, customer_feedback }` |
+| 输出 Schema | `{ confirmation_state, needs_follow_up, feedback_summary, evidence_ref }` |
+| 调用条件 | OutcomeVerify 通过后收到客户反馈；无反馈时返回 `awaiting_feedback` |
+| 依赖工具 | 无外部写操作；初赛剧本使用脱敏反馈文本 |
+| 失败处理 | 反馈不明确时保持等待确认，不将任务伪造为 done |
+| 验证方式 | 正向、负向和空反馈样例；pytest 覆盖 |
+| 安全边界 | 不写入客户身份、原文或凭据到案例档案 |
+| 复用价值 | 可复用于售后、工单回访和满意度确认流程 |
+| 与多 Agent 关系 | ActVerify 调用，结果决定 SessionTL 的 done / escalated / awaiting_customer_confirmation |
+
+## 7. CaseDigestSkill
+
+| 项 | 内容 |
+|---|---|
+| 用途 | 生成隐私安全的结构化案例摘要，并以标签供后续同类任务检索 |
+| 输入 Schema | `{ task_id, channel, triage_result, verify_result, customer_confirm_result, resolution }` |
+| 输出 Schema | `{ case_id, intent, risk_tag, resolution, verification, customer_confirmation, reusable_tags, privacy }` |
+| 调用条件 | 任务进入 `done`、`failed` 或 `escalated` 终态后 |
+| 依赖工具 | `CaseLearning` Worker 的匿名 JSONL 档案 |
+| 失败处理 | 不影响已确认的主任务终态；Trace 记录归档异常 |
+| 验证方式 | pytest 校验隐私字段；剧本 C 检验后续任务命中 `case://` 引用 |
+| 安全边界 | `contains_customer_identity/content/credential` 必须均为 false |
+| 复用价值 | 以意图/风险/处置标签复用经验；当前为结构化标签检索，非完整 RAG |
+| 与多 Agent 关系 | CaseLearning 调用，`knowledge_hits` 传给 TriageGuard 的 ReplyPlan |
 
 ---
 
@@ -125,7 +159,7 @@
 - 降级：渠道不可用时返回 `degraded=true`，触发人工升级
 - 迁移成本：仅需 MCP Server 协议适配，Skill 与 Agent 编排无需重写
 
-## Skill 版本与发布策略（复赛）
+## Skill 版本与发布策略
 
 | 策略 | 说明 |
 |---|---|

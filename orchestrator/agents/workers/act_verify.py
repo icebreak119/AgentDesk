@@ -2,13 +2,28 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from typing import Any
 
 from orchestrator.models.task_context import TaskContext
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_SKILLS = _REPO_ROOT / "skills"
+
+
+def _load_skill(relative: str):
+    path = _SKILLS / relative
+    spec = importlib.util.spec_from_file_location(f"agentdesk_{path.stem}", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载 Skill: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _now_iso() -> str:
@@ -86,26 +101,22 @@ def verify(ctx: TaskContext) -> dict[str, Any]:
     draft = ctx.reply_draft or {}
     expected = str(draft.get("draft_text") or "")
     receipt = ctx.send_receipt or {}
-    if receipt.get("status") != "ok":
-        return {
-            "pass": False,
-            "actual_content": "",
-            "evidence_type": "receipt",
-            "evidence_ref": f"log://verify/{ctx.task_id}/receipt_failed",
+    module = _load_skill("outcome_verify/v0.1/skill.py")
+    return module.run(
+        {
+            "expected_content": expected,
+            "send_receipt": receipt,
+            "session_ref": str((ctx.session_event or {}).get("session_id") or ctx.session_id),
+            "task_id": ctx.task_id,
         }
+    )
 
-    if ctx.mode == "live":
-        actual = expected
-        passed = receipt.get("status") == "ok"
-        evidence_type = "receipt"
-    else:
-        actual = str((receipt.get("receipt_raw") or {}).get("text") or expected)
-        passed = actual == expected
-        evidence_type = "mock_receipt"
 
-    return {
-        "pass": passed,
-        "actual_content": actual,
-        "evidence_type": evidence_type,
-        "evidence_ref": f"log://verify/{ctx.task_id}/001",
-    }
+def confirm_customer(ctx: TaskContext) -> dict[str, Any]:
+    module = _load_skill("customer_confirm/v0.1/skill.py")
+    return module.run(
+        {
+            "task_id": ctx.task_id,
+            "customer_feedback": (ctx.raw_event or {}).get("customer_feedback"),
+        }
+    )

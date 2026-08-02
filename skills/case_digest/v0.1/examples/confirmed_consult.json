@@ -1,0 +1,8 @@
+{
+  "task_id": "task_demo_case_001",
+  "channel": "douyin",
+  "triage_result": {"intent": "consult", "risk_tag": "low"},
+  "verify_result": {"pass": true},
+  "customer_confirm_result": {"confirmation_state": "confirmed"},
+  "resolution": "done"
+}

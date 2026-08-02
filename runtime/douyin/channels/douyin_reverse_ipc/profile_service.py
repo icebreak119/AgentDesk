@@ -36,6 +36,17 @@ def _row_profile(row: Optional[sqlite3.Row]) -> dict[str, str]:
     }
 
 
+def _optional_profile_row(
+    conn: sqlite3.Connection,
+    sql: str,
+    params: tuple[Any, ...],
+) -> Optional[sqlite3.Row]:
+    try:
+        return conn.execute(sql, params).fetchone()
+    except sqlite3.Error:
+        return None
+
+
 def get_account_profile(db_path: str, account_code: str) -> dict[str, Any]:
     code = _require_account_code(account_code)
     conn = _connect(db_path)
@@ -44,7 +55,8 @@ def get_account_profile(db_path: str, account_code: str) -> dict[str, Any]:
             "SELECT account_code, nickname, douyin_uid FROM im_accounts WHERE account_code = ? LIMIT 1",
             (code,),
         ).fetchone()
-        self_row = conn.execute(
+        self_row = _optional_profile_row(
+            conn,
             """
             SELECT display_name, avatar_url, avatar_local_path
             FROM conversation_profiles
@@ -53,7 +65,7 @@ def get_account_profile(db_path: str, account_code: str) -> dict[str, Any]:
             LIMIT 1
             """,
             (code,),
-        ).fetchone()
+        )
     finally:
         conn.close()
 
@@ -85,7 +97,8 @@ def get_conversation_profile(db_path: str, account_code: str, conversation_id: s
 
     conn = _connect(db_path)
     try:
-        row = conn.execute(
+        row = _optional_profile_row(
+            conn,
             """
             SELECT conversation_id, display_name, avatar_url, avatar_local_path, updated_at
             FROM conversation_profiles
@@ -94,7 +107,7 @@ def get_conversation_profile(db_path: str, account_code: str, conversation_id: s
             LIMIT 1
             """,
             (code, cid),
-        ).fetchone()
+        )
     finally:
         conn.close()
 

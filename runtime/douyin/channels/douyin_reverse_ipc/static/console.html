@@ -91,7 +91,57 @@
       background: #94a3b8;
     }
     .dot.ok { background: #14b8a6; }
+    .dot.warn { background: var(--warn); }
     .dot.bad { background: var(--danger); }
+
+    .panel-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .field-caption {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .login-flags {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      padding-top: 2px;
+    }
+
+    .checkline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.2;
+      user-select: none;
+    }
+
+    .checkline input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .login-summary {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfe;
+      padding: 14px 16px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
     .grid {
       display: grid;
@@ -468,6 +518,54 @@
     <section class="panel" style="margin-top: 18px;">
       <div class="panel-head">
         <div>
+          <h2>托管账号登录</h2>
+          <p>Web 端发起登录采集，Runtime 节点执行浏览器并回写账号态</p>
+        </div>
+        <div class="status-pill" id="login-pill">
+          <span class="dot" id="login-dot"></span>
+          <span id="login-text">尚未发起任务</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <form class="form-grid" id="login-form">
+          <div class="split">
+            <label>
+              已有账号
+              <select id="login-account-select"></select>
+            </label>
+            <label>
+              账号编号
+              <input id="login-account-code" required placeholder="新账号请填写，例如 dy_store_001" />
+            </label>
+          </div>
+          <div class="split">
+            <label>
+              最长等待秒数
+              <input id="login-timeout" type="number" min="30" max="1800" value="300" />
+            </label>
+            <label>
+              浏览器通道
+              <input id="login-browser-channel" placeholder="chrome / msedge" />
+            </label>
+          </div>
+          <div class="login-flags">
+            <div class="field-caption">登录选项</div>
+            <label class="checkline"><input id="login-headless" type="checkbox" />无头模式</label>
+            <label class="checkline"><input id="login-skip-health" type="checkbox" />跳过健康检查</label>
+          </div>
+          <div class="toolbar">
+            <button type="submit" class="primary">发起登录采集</button>
+            <button type="button" id="btn-login-status">查看最新状态</button>
+          </div>
+        </form>
+        <div class="login-summary" id="login-summary">尚未发起登录任务。</div>
+        <p class="panel-note">说明：Web 端只负责触发与监控；浏览器会话仍由本机 Runtime 节点执行，凭证回写到 SQLite / profile 目录。</p>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <div class="panel-head">
+        <div>
           <h2>私信会话</h2>
           <p>展示对方真实昵称与头像，点击会话可填入发送表单</p>
         </div>
@@ -530,6 +628,8 @@
     const logEl = $("result-log");
     let selectedAccount = "";
     let selectedConversationId = "";
+    let selectedLoginJobId = "";
+    let loginPollTimer = null;
 
     function escapeHtml(value) {
       return String(value || "")
@@ -555,6 +655,112 @@
     function writeLog(title, payload) {
       const stamp = new Date().toLocaleString("zh-CN", { hour12: false });
       logEl.textContent = `[${stamp}] ${title}\n` + JSON.stringify(payload, null, 2);
+    }
+
+    function setLoginStatus(status, text) {
+      const dot = $("login-dot");
+      const pillText = $("login-text");
+      if (dot) dot.className = `dot ${status === "running" || status === "succeeded" ? "ok" : status === "queued" ? "warn" : status === "failed" ? "bad" : ""}`.trim();
+      if (pillText) pillText.textContent = text;
+    }
+
+    function renderLoginSummary(job) {
+      const box = $("login-summary");
+      if (!box) return;
+      if (!job) {
+        box.textContent = "尚未发起登录任务。";
+        setLoginStatus("", "尚未发起任务");
+        return;
+      }
+      const statusText = {
+        queued: "排队中",
+        running: "执行中",
+        succeeded: "已完成",
+        failed: "已失败",
+        not_started: "未开始",
+      }[job.status] || job.status || "未知";
+      const lines = [
+        `账号：${job.account_code || selectedAccount || "-"}`,
+        `任务：${job.job_id || "-"}`,
+        `状态：${statusText}`,
+      ];
+      if (job.started_at) lines.push(`开始：${job.started_at}`);
+      if (job.finished_at) lines.push(`结束：${job.finished_at}`);
+      if (job.returncode !== null && job.returncode !== undefined) lines.push(`返回码：${job.returncode}`);
+      if (job.elapsed_seconds !== null && job.elapsed_seconds !== undefined) lines.push(`耗时：${job.elapsed_seconds}s`);
+      if (job.error) lines.push(`错误：${job.error}`);
+      box.textContent = lines.join("\n");
+      setLoginStatus(job.status, `登录任务 · ${statusText}`);
+    }
+
+    function getLoginFormValues() {
+      return {
+        accountCode: ($("login-account-code")?.value || $("login-account-select")?.value || selectedAccount || "").trim(),
+        timeout: Number.parseInt($("login-timeout")?.value || "300", 10) || 300,
+        browserChannel: ($("login-browser-channel")?.value || "").trim(),
+        headless: Boolean($("login-headless")?.checked),
+        skipHealthCheck: Boolean($("login-skip-health")?.checked),
+      };
+    }
+
+    function syncSelectedAccount(code, { loadList = false, syncLoginCode = true } = {}) {
+      const nextAccount = code || "";
+      const accountChanged = selectedAccount !== nextAccount;
+      selectedAccount = nextAccount;
+      const accountSelect = $("account-select");
+      const loginSelect = $("login-account-select");
+      const loginCode = $("login-account-code");
+      if (accountSelect && accountSelect.value !== selectedAccount) {
+        accountSelect.value = selectedAccount;
+      }
+      if (loginSelect && loginSelect.value !== selectedAccount) {
+        loginSelect.value = selectedAccount;
+      }
+      if (syncLoginCode && loginCode && loginCode.value !== selectedAccount) {
+        loginCode.value = selectedAccount;
+      }
+      selectedConversationId = "";
+      if (accountChanged) {
+        selectedLoginJobId = "";
+        stopLoginPolling();
+        renderLoginSummary(null);
+      }
+      if (loadList && selectedAccount) {
+        return loadConversations();
+      }
+      return Promise.resolve();
+    }
+
+    function stopLoginPolling() {
+      if (loginPollTimer) {
+        window.clearTimeout(loginPollTimer);
+        loginPollTimer = null;
+      }
+    }
+
+    function scheduleLoginPolling(jobId, accountCode) {
+      stopLoginPolling();
+      const tick = async () => {
+        try {
+          const data = await api(`/login/jobs/${encodeURIComponent(jobId)}`);
+          const job = data.data || {};
+          renderLoginSummary(job);
+          if (job.status === "queued" || job.status === "running") {
+            loginPollTimer = window.setTimeout(tick, 2500);
+            return;
+          }
+          stopLoginPolling();
+          if (job.status === "succeeded") {
+            await loadAccounts();
+            syncSelectedAccount(accountCode);
+            await loadConversations();
+          }
+        } catch (err) {
+          stopLoginPolling();
+          writeLog("查询登录状态失败", { message: String(err.message || err) });
+        }
+      };
+      loginPollTimer = window.setTimeout(tick, 1500);
     }
 
     async function api(path, options = {}) {
@@ -585,14 +791,18 @@
     function renderAccounts(accounts) {
       const list = $("account-list");
       const select = $("account-select");
+      const loginSelect = $("login-account-select");
       if (!accounts || !accounts.length) {
         list.innerHTML = '<div class="empty">暂无账号，请先完成凭证采集。</div>';
         select.innerHTML = '<option value="">暂无账号</option>';
+        loginSelect.innerHTML = '<option value="">暂无账号</option>';
+        syncSelectedAccount("", { syncLoginCode: false });
         return;
       }
 
       list.innerHTML = "";
       select.innerHTML = "";
+      loginSelect.innerHTML = "";
       accounts.forEach((item, index) => {
         const code = item.account_code || item.code || item.id || `账号-${index + 1}`;
         const enabled = item.enabled !== false;
@@ -620,15 +830,18 @@
         `;
         list.appendChild(card);
 
-        const opt = document.createElement("option");
-        opt.value = code;
-        opt.textContent = name === code ? code : `${name}（${code}）`;
-        select.appendChild(opt);
+        [select, loginSelect].forEach((target) => {
+          const opt = document.createElement("option");
+          opt.value = code;
+          opt.textContent = name === code ? code : `${name}（${code}）`;
+          target.appendChild(opt);
+        });
       });
 
       if (!selectedAccount && accounts.length) {
-        selectedAccount = accounts[0].account_code || accounts[0].code || accounts[0].id || select.value;
-        select.value = selectedAccount;
+        syncSelectedAccount(accounts[0].account_code || accounts[0].code || accounts[0].id || select.value);
+      } else {
+        syncSelectedAccount(selectedAccount, { syncLoginCode: false });
       }
     }
 
@@ -692,9 +905,7 @@
     async function accountAction(action, code) {
       if (!code) return;
       if (action === "select") {
-        selectedAccount = code;
-        selectedConversationId = "";
-        $("account-select").value = code;
+        syncSelectedAccount(code);
         document.querySelectorAll(".account-item").forEach((el) => el.classList.remove("active"));
         await loadConversations();
         return;
@@ -712,8 +923,7 @@
         scheduleProfileRefresh(code);
       }
       if (action === "sync") {
-        selectedAccount = code;
-        $("account-select").value = code;
+        syncSelectedAccount(code);
         await loadAccounts();
         await loadConversations();
         return;
@@ -771,6 +981,55 @@
       }
     });
 
+    $("login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const values = getLoginFormValues();
+      if (!values.accountCode) {
+        writeLog("登录采集失败", { message: "请先选择账号" });
+        return;
+      }
+      try {
+        const data = await api(`/accounts/${encodeURIComponent(values.accountCode)}/login/start`, {
+          method: "POST",
+          body: JSON.stringify({
+            timeout: values.timeout,
+            browser_channel: values.browserChannel,
+            headless: values.headless,
+            skip_health_check: values.skipHealthCheck,
+          }),
+        });
+        const job = data.data || {};
+        selectedLoginJobId = job.job_id || "";
+        renderLoginSummary(job);
+        writeLog("发起登录采集", data);
+        if (selectedLoginJobId && (job.status === "queued" || job.status === "running")) {
+          scheduleLoginPolling(selectedLoginJobId, values.accountCode);
+        }
+      } catch (err) {
+        writeLog("登录采集失败", { message: String(err.message || err) });
+      }
+    });
+
+    $("btn-login-status").addEventListener("click", async () => {
+      const values = getLoginFormValues();
+      if (!values.accountCode) {
+        writeLog("查询登录状态失败", { message: "请先选择账号" });
+        return;
+      }
+      try {
+        const data = await api(`/accounts/${encodeURIComponent(values.accountCode)}/login/status`);
+        const job = data.data || {};
+        selectedLoginJobId = job.job_id || "";
+        renderLoginSummary(job);
+        writeLog("登录采集状态", data);
+        if (selectedLoginJobId && (job.status === "queued" || job.status === "running")) {
+          scheduleLoginPolling(selectedLoginJobId, values.accountCode);
+        }
+      } catch (err) {
+        writeLog("查询登录状态失败", { message: String(err.message || err) });
+      }
+    });
+
     $("btn-load-conversations").addEventListener("click", async () => {
       try { await loadConversations(); } catch (err) {
         writeLog("拉取会话失败", { message: String(err.message || err) });
@@ -797,10 +1056,20 @@
       logEl.textContent = "等待操作…";
     });
 
-  $("account-select").addEventListener("change", async (event) => {
-      selectedAccount = event.target.value;
-      selectedConversationId = "";
+    $("account-select").addEventListener("change", async (event) => {
+      syncSelectedAccount(event.target.value);
       try { await loadConversations(); } catch (_) { /* ignore */ }
+    });
+
+    $("login-account-select").addEventListener("change", async (event) => {
+      syncSelectedAccount(event.target.value);
+      try { await loadConversations(); } catch (_) { /* ignore */ }
+    });
+
+    $("login-account-code").addEventListener("input", () => {
+      stopLoginPolling();
+      selectedLoginJobId = "";
+      renderLoginSummary(null);
     });
 
     (async function init() {

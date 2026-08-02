@@ -1,404 +1,360 @@
-"""Generate AgentDesk submission screenshots: Runtime /docs capture + redacted logs."""
+"""Generate redacted screenshots for the AgentDesk preliminary submission.
+
+The console captures use the repository's real console.html with a local mock
+API. This demonstrates the shipped UI without exposing a real account, chat,
+credential, or workstation path. The trace captures are generated from the
+same A/B/C scripts that pytest exercises.
+"""
 
 from __future__ import annotations
 
-import re
-import shutil
-import socket
+import html
+import json
 import subprocess
 import sys
-import time
-import urllib.error
-import urllib.request
+import threading
+from contextlib import contextmanager
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from typing import Iterator
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-REPO_ROOT = ROOT.parent.parent
+REPO_ROOT = ROOT.parent
 OUT = ROOT / "07_系统截图"
-LOG_DIR = REPO_ROOT / "logs"
 ARCH = ROOT / "06_架构图.png"
-RUNTIME_CONSOLE_URL = "http://127.0.0.1:8765/console"
-FOOTER = "来源：AgentDesk 抖音 Channel Runtime 日志（已打码）· 初赛工程证据"
+CONSOLE_HTML = REPO_ROOT / "runtime" / "douyin" / "channels" / "douyin_reverse_ipc" / "static" / "console.html"
 
-plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Consolas", "DejaVu Sans Mono"]
-plt.rcParams["axes.unicode_minus"] = False
+SCREENSHOTS = (
+    "01_托管账号登录控制面.png",
+    "02_抖音渠道控制台_脱敏演示.png",
+    "03_多Agent架构图.png",
+    "04_审批闭环Trace.png",
+    "05_执行核验Trace.png",
+    "06_跨渠道去重与案例复用Trace.png",
+)
+LEGACY_SCREENSHOTS = (
+    "01_账号接入页.png",
+    "02_会话工作台.png",
+    "03_架构图或日志总览.png",
+    "04_高风险审批任务.png",
+    "05_核验失败任务.png",
+)
 
-
-def redact(line: str) -> str:
-    line = re.sub(r"nickname=[^\s]+", "nickname=[已打码]", line)
-    line = re.sub(r"douyin_uid=\d+", "douyin_uid=43****4680", line)
-    line = re.sub(r"customer=\d+", "customer=75****7963", line)
-    line = re.sub(r"uid=\d+", "uid=43****4680", line)
-    line = re.sub(r"user_id=\d+", "user_id=43****4680", line)
-    line = re.sub(
-        r"account_code=([0-9a-f]{8})[0-9a-f\-]+",
-        r"account_code=\1-****-****-****-************",
-        line,
-    )
-    line = re.sub(
-        r"profile_id=([0-9a-f]{8})[0-9a-f\-]+",
-        r"profile_id=\1-****-****-****-************",
-        line,
-    )
-    line = re.sub(r"profile=([0-9a-f]{8})[0-9a-f\-]+", r"profile=\1-****", line)
-    line = re.sub(r"conversation_id=[^\s]+", "conversation_id=0:1:***:****", line)
-    line = re.sub(r"conv=0:1:[^\s]+", "conv=0:1:***:****", line)
-    line = re.sub(r"peer_id=\d+", "peer_id=75****7963", line)
-    line = re.sub(r"peer=\d+", "peer=75****7963", line)
-    line = re.sub(r"C:\\Users\\[^\\]+", r"C:\\Users\\[redacted]", line)
-    return line
-
-
-def resolve_log_files() -> list[Path]:
-    names = [
-        "agentdesk.log",
-        "yunduo.log",
-        "yunduo.log.2026-07-28",
-        "yunduo.log.2026-07-29",
-    ]
-    found: list[Path] = []
-    for name in names:
-        p = LOG_DIR / name
-        if p.is_file():
-            found.append(p)
-    return found
+ACCOUNT_CODE = "demo-shop-001"
+ACCOUNT = {
+    "account_code": ACCOUNT_CODE,
+    "nickname": "演示店铺（已脱敏）",
+    "enabled": True,
+    "running": True,
+}
+CONVERSATIONS = [
+    {
+        "conversation_id": "demo:consult:001",
+        "peer_uid": "customer-demo-001",
+        "display_name": "客户 A（脱敏）",
+    },
+    {
+        "conversation_id": "demo:refund:002",
+        "peer_uid": "customer-demo-002",
+        "display_name": "客户 B（脱敏）",
+    },
+]
 
 
-def pick_lines(log_paths: list[Path], patterns: list[str], limit: int = 14) -> list[str]:
-    out: list[str] = []
-    for log_path in log_paths:
-        with log_path.open("r", encoding="utf-8", errors="replace") as f:
-            for raw in f:
-                if any(p in raw for p in patterns):
-                    out.append(redact(raw.rstrip()))
-    deduped: list[str] = []
-    for line in out:
-        if line not in deduped:
-            deduped.append(line)
-    if not deduped:
-        return [f"# no log lines matched: {patterns[:3]}..."]
-    return deduped[:limit]
+class QuietStaticHandler(SimpleHTTPRequestHandler):
+    def log_message(self, format: str, *args: object) -> None:
+        return
 
 
-def render_log_png(title: str, subtitle: str, lines: list[str], out_path: Path) -> None:
-    fig = plt.figure(figsize=(14, 8), dpi=160, facecolor="#0f172a")
-    ax = fig.add_axes([0, 0, 1, 1])
-    ax.set_facecolor("#0f172a")
-    ax.axis("off")
+@contextmanager
+def static_console_server() -> Iterator[str]:
+    """Serve console.html locally so relative fetch calls have an origin."""
+    if not CONSOLE_HTML.is_file():
+        raise FileNotFoundError(f"Missing console UI: {CONSOLE_HTML}")
 
-    ax.text(0.03, 0.95, title, color="#e2e8f0", fontsize=18, weight="bold", va="top")
-    ax.text(0.03, 0.90, subtitle, color="#94a3b8", fontsize=11, va="top")
-    ax.add_patch(Rectangle((0.02, 0.08), 0.96, 0.78, fill=False, edgecolor="#334155", linewidth=1.2))
-
-    y = 0.82
-    for line in lines:
-        color = "#f8fafc"
-        if "WARNING" in line or "failed" in line or "verify" in line.lower():
-            color = "#fbbf24"
-        if "ERROR" in line:
-            color = "#f87171"
-        if "important_consult" in line:
-            color = "#fb923c"
-        ax.text(0.035, y, line[:150], color=color, fontsize=8.2, family="Microsoft YaHei", va="top")
-        y -= 0.052
-        if y < 0.1:
-            break
-
-    ax.text(0.03, 0.03, FOOTER, color="#64748b", fontsize=9, va="bottom")
-    fig.savefig(out_path, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.2)
-    plt.close(fig)
-
-
-def port_open(host: str, port: int) -> bool:
+    handler = partial(QuietStaticHandler, directory=str(CONSOLE_HTML.parent))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
     try:
-        with socket.create_connection((host, port), timeout=1.5):
-            return True
-    except OSError:
-        return False
+        yield f"http://127.0.0.1:{server.server_port}/{CONSOLE_HTML.name}"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
 
 
-def http_ok(url: str) -> bool:
-    try:
-        with urllib.request.urlopen(url, timeout=3) as resp:
-            return 200 <= resp.status < 400
-    except (urllib.error.URLError, TimeoutError, OSError):
-        return False
-
-
-def try_start_runtime_server() -> subprocess.Popen | None:
-    db = REPO_ROOT / "channels" / "douyin_all_user" / "reverse_runtime" / "_douyin_im_accounts.db"
-    if not db.is_file():
-        print("skip runtime server: missing db", db)
-        return None
-    if port_open("127.0.0.1", 8765):
-        return None
-    cmd = [
-        sys.executable,
-        "-m",
-        "channels.douyin_reverse_ipc.http_server",
-        "--db-path",
-        str(db),
-        "--host",
-        "127.0.0.1",
-        "--port",
-        "8765",
-    ]
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(REPO_ROOT),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+def json_response(route, payload: dict) -> None:
+    route.fulfill(
+        status=200,
+        content_type="application/json; charset=utf-8",
+        body=json.dumps(payload, ensure_ascii=False),
     )
-    for _ in range(20):
-        if http_ok(RUNTIME_CONSOLE_URL):
-            print("runtime server ready at", RUNTIME_CONSOLE_URL)
-            return proc
-        time.sleep(0.5)
-    proc.terminate()
-    print("runtime server failed to start")
-    return None
 
 
-def capture_runtime_docs(out_path: Path) -> bool:
-    return capture_console_suite(OUT).get(out_path.name, False)
+def route_sanitized_api(route) -> None:
+    """Return only static, non-sensitive data to console.html."""
+    path = urlparse(route.request.url).path
+    if path == "/ping":
+        json_response(route, {"ok": True, "data": {"service": "AgentDesk demo runtime"}})
+        return
+    if path == "/accounts":
+        json_response(route, {"ok": True, "data": [ACCOUNT]})
+        return
+    if path == f"/accounts/{ACCOUNT_CODE}/conversations":
+        json_response(route, {"ok": True, "data": {"conversations": CONVERSATIONS}})
+        return
+    if path.startswith(f"/accounts/{ACCOUNT_CODE}/login/"):
+        json_response(
+            route,
+            {
+                "ok": True,
+                "data": {
+                    "job_id": "login-job-demo-001",
+                    "account_code": ACCOUNT_CODE,
+                    "status": "queued",
+                    "message": "脱敏演示任务，不包含真实浏览器凭据。",
+                },
+            },
+        )
+        return
+    if path.startswith("/login/jobs/"):
+        json_response(route, {"ok": True, "data": {"job_id": "login-job-demo-001", "status": "queued"}})
+        return
+    if path.startswith(f"/accounts/{ACCOUNT_CODE}/"):
+        json_response(
+            route,
+            {
+                "ok": True,
+                "data": {
+                    "account_code": ACCOUNT_CODE,
+                    "status": "ok",
+                    "receipt": "demo-receipt-001",
+                    "mode": "sanitized-demo",
+                },
+            },
+        )
+        return
+    route.continue_()
 
 
-def capture_console_suite(out_dir: Path) -> dict[str, bool]:
-    """Capture multiple real /console screenshots for submission."""
-    results: dict[str, bool] = {}
+def add_demo_badge(page) -> None:
+    page.evaluate(
+        """
+        () => {
+          const form = document.getElementById('login-form');
+          const panel = form?.closest('section.panel');
+          if (!panel || panel.querySelector('.submission-demo-badge')) return;
+          const badge = document.createElement('div');
+          badge.className = 'submission-demo-badge';
+          badge.textContent = '脱敏演示数据 · 本地 Mock API · 不含真实凭据';
+          badge.style.cssText = [
+            'margin:0 0 14px', 'padding:9px 12px', 'border-radius:8px',
+            'background:#e7f6f1', 'border:1px solid #8fd3c4',
+            'color:#136f63', 'font-size:13px', 'font-weight:600'
+          ].join(';');
+          panel.querySelector('.panel-body')?.prepend(badge);
+        }
+        """
+    )
+
+
+def capture_sanitized_console() -> None:
     try:
         from playwright.sync_api import sync_playwright
-    except ImportError:
-        print("playwright not installed, skip console capture")
-        return results
+    except ImportError as exc:
+        raise RuntimeError("截图生成需要 playwright；请先在 runtime/douyin 安装 requirements.txt。") from exc
 
-    if not http_ok(RUNTIME_CONSOLE_URL):
-        print("runtime /console not reachable")
-        return results
-
-    def _shot_page(filename: str, *, min_size: int = 20_000, full_page: bool = False, clip: dict | None = None) -> None:
-        out_path = out_dir / filename
+    with static_console_server() as url, sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
         try:
-            page.screenshot(path=str(out_path), full_page=full_page, clip=clip)
-            ok = out_path.is_file() and out_path.stat().st_size >= min_size
-            results[filename] = ok
-            if ok:
-                print("captured console ->", filename)
-            else:
-                print("capture too small:", filename)
-        except Exception as exc:
-            print("capture failed", filename, exc)
-            results[filename] = False
+            page = browser.new_page(viewport={"width": 1440, "height": 980}, device_scale_factor=1)
+            page.route("**/*", route_sanitized_api)
+            page.goto(url, wait_until="networkidle", timeout=30000)
+            page.wait_for_selector("#account-list .account-item", timeout=15000)
+            page.wait_for_selector("#conversation-list .conversation-item", timeout=15000)
+            add_demo_badge(page)
 
-    def _shot(locator, filename: str, *, min_size: int = 20_000) -> None:
-        path = out_dir / filename
-        try:
-            locator.screenshot(path=str(path))
-            ok = path.is_file() and path.stat().st_size >= min_size
-            results[filename] = ok
-            if ok:
-                print("captured console ->", filename)
-            else:
-                print("capture too small:", filename)
-        except Exception as exc:
-            print("capture failed", filename, exc)
-            results[filename] = False
+            login_panel = page.locator("section.panel").filter(has=page.locator("#login-form")).first
+            login_panel.screenshot(path=str(OUT / SCREENSHOTS[0]))
 
-    def _panel_clip(*labels: str, include_hero: bool = False) -> dict[str, float] | None:
-        boxes = []
-        if include_hero:
-            hero = page.locator("header.hero").bounding_box()
-            if hero:
-                boxes.append(hero)
-        for label in labels:
-            panel = page.locator("section.panel").filter(has_text=label).first
-            if panel.count():
-                box = panel.bounding_box()
-                if box:
-                    boxes.append(box)
-        if not boxes:
-            return None
-        y = min(b["y"] for b in boxes)
-        bottom = max(b["y"] + b["height"] for b in boxes)
-        return {"x": 0.0, "y": y, "width": 1440.0, "height": min(bottom - y + 20.0, 2200.0)}
-
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(viewport={"width": 1440, "height": 900})
-            page.goto(RUNTIME_CONSOLE_URL, wait_until="networkidle", timeout=30000)
-            page.wait_for_selector(
-                "#account-list .account-item, #account-list .empty",
-                timeout=15000,
-            )
-            page.wait_for_timeout(1200)
-
-            account_panel = page.locator("section.panel").nth(0)
-            _shot(account_panel, "01_账号接入页.png")
-
-            select_btn = page.locator('button[data-action="select"]').first
-            if select_btn.count():
-                select_btn.click()
-                page.wait_for_timeout(400)
-
-            reload_btn = page.locator("#btn-reload-conversations")
-            if reload_btn.count():
-                reload_btn.click()
-            page.wait_for_selector(
-                "#conversation-list .conversation-item, #conversation-list .empty",
-                timeout=15000,
-            )
-            page.wait_for_timeout(1800)
-
-            clip = _panel_clip("账号托管", "发送文本私信", "私信会话", include_hero=True)
-            if not clip:
-                hero = page.locator("header.hero").bounding_box()
-                conv = page.locator("section.panel").filter(has_text="私信会话").first.bounding_box()
-                if hero and conv:
-                    y = max(0.0, hero["y"])
-                    clip = {
-                        "x": 0.0,
-                        "y": y,
-                        "width": 1440.0,
-                        "height": min((conv["y"] + conv["height"] - y) + 24.0, 2200.0),
-                    }
-            if clip:
-                _shot_page("02_会话工作台.png", clip=clip, min_size=35_000)
-            else:
-                page.screenshot(path=str(out_dir / "02_会话工作台.png"), full_page=True)
-                out = out_dir / "02_会话工作台.png"
-                results["02_会话工作台.png"] = out.is_file() and out.stat().st_size >= 35_000
-                if results["02_会话工作台.png"]:
-                    print("captured console -> 02_会话工作台.png (full page)")
-
-            conv_item = page.locator("#conversation-list .conversation-item").first
-            if conv_item.count():
-                conv_item.click()
-                page.wait_for_timeout(600)
-
-            send_clip = _panel_clip("发送文本私信", "私信会话")
-            if send_clip:
-                _shot_page("04_高风险审批任务.png", clip=send_clip, min_size=30_000)
-            else:
-                send_panel = page.locator("section.panel").filter(has_text="发送文本私信")
-                _shot(send_panel.first, "04_高风险审批任务.png")
-
-            page.evaluate(
-                """
-                async () => {
-                  const log = document.getElementById('result-log');
-                  const code = document.getElementById('account-select')?.value;
-                  if (!log || !code) return;
-                  const stamp = new Date().toLocaleString('zh-CN', { hour12: false });
-                  try {
-                    const res = await fetch(`/accounts/${encodeURIComponent(code)}/refresh_profiles`, { method: 'POST' });
-                    const data = await res.json();
-                    log.textContent = `[${stamp}] 资料同步 / 状态核验\\n` + JSON.stringify(data, null, 2);
-                  } catch (err) {
-                    log.textContent = `[${stamp}] 资料同步失败\\n` + String(err?.message || err);
-                  }
-                }
-                """
-            )
-            page.wait_for_timeout(1800)
-
-            result_panel = page.locator("section.panel").filter(has_text="调用结果")
-            result_panel.scroll_into_view_if_needed()
-            page.wait_for_timeout(400)
-            _shot(result_panel.first, "05_核验失败任务.png", min_size=15_000)
-
+            conversation = page.locator("#conversation-list .conversation-item").first
+            conversation.click()
+            page.wait_for_timeout(250)
+            page.screenshot(path=str(OUT / SCREENSHOTS[1]), full_page=True)
+        finally:
             browser.close()
-    except Exception as exc:
-        print("console suite capture failed:", exc)
 
-    return results
+
+def run_trace(module: str, output_name: str, *extra_args: str) -> list[dict]:
+    trace_path = OUT / output_name
+    command = [sys.executable, "-m", module, "-o", str(trace_path), *extra_args]
+    proc = subprocess.run(
+        command,
+        cwd=str(REPO_ROOT),
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if proc.returncode:
+        raise RuntimeError(f"Trace demo failed: {' '.join(command)}\n{proc.stderr}")
+    try:
+        return [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    finally:
+        trace_path.unlink(missing_ok=True)
+
+
+def trace_row(event: dict) -> tuple[str, str, str]:
+    agent = str(event.get("agent", "-"))
+    action = str(event.get("event") or event.get("skill") or event.get("tool") or "trace")
+    status = str(event.get("to") or event.get("status") or event.get("from") or "-")
+    return agent, action, status
+
+
+def trace_html(title: str, subtitle: str, events: list[dict], conclusion: str) -> str:
+    rows = "\n".join(
+        "<tr>"
+        f"<td>{html.escape(agent)}</td>"
+        f"<td>{html.escape(action)}</td>"
+        f"<td><span class='status'>{html.escape(status)}</span></td>"
+        "</tr>"
+        for agent, action, status in (trace_row(event) for event in events)
+    )
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<style>
+  * {{ box-sizing: border-box; }}
+  body {{ margin: 0; background: #f4f8f7; color: #143c3b; font-family: "Microsoft YaHei", "Segoe UI", sans-serif; }}
+  main {{ width: 1440px; min-height: 860px; padding: 54px 64px; }}
+  .eyebrow {{ color: #168a7a; font-size: 17px; font-weight: 700; margin: 0 0 14px; }}
+  h1 {{ font-size: 38px; line-height: 1.2; margin: 0; }}
+  .subtitle {{ color: #5c6c72; font-size: 18px; margin: 14px 0 32px; }}
+  .chips {{ display: flex; gap: 12px; margin-bottom: 24px; }}
+  .chip {{ border: 1px solid #b9dcd5; background: #e7f6f1; border-radius: 18px; color: #136f63; padding: 8px 14px; font-size: 14px; }}
+  .panel {{ background: #fff; border: 1px solid #d7e2df; border-radius: 10px; overflow: hidden; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 17px; }}
+  th {{ background: #e9f2f7; color: #32749a; padding: 16px 20px; text-align: left; font-size: 15px; }}
+  td {{ border-top: 1px solid #e4ece9; padding: 15px 20px; }}
+  .status {{ color: #136f63; background: #e7f6f1; border-radius: 5px; padding: 4px 8px; }}
+  .conclusion {{ margin-top: 26px; background: #143c3b; color: #fff; border-radius: 9px; padding: 20px 24px; font-size: 19px; line-height: 1.5; }}
+  footer {{ color: #6b7b80; font-size: 14px; margin-top: 24px; }}
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">AgentDesk · 参考编排器 Trace（Mock，离线可复现）</p>
+  <h1>{html.escape(title)}</h1>
+  <p class="subtitle">{html.escape(subtitle)}</p>
+  <div class="chips"><span class="chip">TaskContext</span><span class="chip">Trace JSONL</span><span class="chip">不含真实账号数据</span></div>
+  <section class="panel">
+    <table><thead><tr><th>Agent</th><th>事件 / Skill</th><th>状态</th></tr></thead><tbody>{rows}</tbody></table>
+  </section>
+  <div class="conclusion">{html.escape(conclusion)}</div>
+  <footer>证据来源：仓内 orchestrator/demo 剧本运行输出；可用 python -m pytest -q 复现。</footer>
+</main>
+</body>
+</html>"""
+
+
+def render_html_screenshot(source: str, output: Path) -> None:
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError("截图生成需要 playwright；请先在 runtime/douyin 安装 requirements.txt。") from exc
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": 1440, "height": 900}, device_scale_factor=1)
+            page.set_content(source, wait_until="networkidle")
+            page.screenshot(path=str(output), full_page=True)
+        finally:
+            browser.close()
 
 
 def build_architecture() -> None:
     script = ROOT / "build_arch_diagram.py"
     if not script.is_file():
-        print("warning: missing", script)
-        return
-    import runpy
-
-    runpy.run_path(str(script), run_name="__main__")
+        raise FileNotFoundError(f"Missing architecture generator: {script}")
+    subprocess.run([sys.executable, str(script)], cwd=str(REPO_ROOT), check=True)
+    if not ARCH.is_file():
+        raise FileNotFoundError(f"Missing generated architecture: {ARCH}")
+    (OUT / SCREENSHOTS[2]).write_bytes(ARCH.read_bytes())
 
 
 def build() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    logs = resolve_log_files()
-    if not logs:
-        print("warning: no log files under", LOG_DIR)
+    for filename in LEGACY_SCREENSHOTS:
+        (OUT / filename).unlink(missing_ok=True)
 
-    server_proc = try_start_runtime_server()
-    captured = capture_console_suite(OUT)
-    docs_out = OUT / "01_账号接入页.png"
-    if not captured.get("01_账号接入页.png"):
-        render_log_png(
-            "01 AgentDesk 抖音 Runtime / 账号托管",
-            "ChannelIngress + IPC：凭证就绪 → 收信启动 → messaging_ready",
-            pick_lines(
-                logs,
-                [
-                    "请求启动抖音托管账号",
-                    "抖音托管登录采集开始",
-                    "采集成功，状态已写为 credentials_ready",
-                    "抖音 IPC 收信已启动",
-                    "抖音托管账号启动成功",
-                    "抖音私信 messaging_ready",
-                    "douyin_reverse_ipc",
-                ],
-                limit=12,
-            ),
-            docs_out,
-        )
-
-    if not captured.get("02_会话工作台.png"):
-        print(
-            "ERROR: 02_会话工作台.png 未截到真实控制台。"
-            "请先启动 8765 服务后重跑：python docs/goai/build_submission_screenshots.py"
-        )
-
+    capture_sanitized_console()
     build_architecture()
-    if ARCH.is_file():
-        shutil.copy2(ARCH, OUT / "03_架构图或日志总览.png")
-        print("updated architecture -> 03_架构图或日志总览.png")
-    else:
-        render_log_png(
-            "03 AgentDesk 架构总览",
-            "AgentTeams 分层 + 抖音 Channel Runtime",
-            pick_lines(logs, ["managed_controller", "douyin_ipc", "douyin_reverse_ipc"], limit=10),
-            OUT / "03_架构图或日志总览.png",
+
+    approval_events = run_trace("orchestrator.demo.script_b_approval", "_approval_trace.jsonl")
+    render_html_screenshot(
+        trace_html(
+            "高风险审批闭环",
+            "退款 / 账户变更先进入 suspended，批准后才允许执行与核验。",
+            approval_events,
+            "审批证据：approval_required -> approval_granted -> ChannelSend -> OutcomeVerify。",
+        ),
+        OUT / SCREENSHOTS[3],
+    )
+
+    execution_events = run_trace("orchestrator.demo.script_a_consult", "_execution_trace.jsonl")
+    render_html_screenshot(
+        trace_html(
+            "低风险执行与结果核验",
+            "普通咨询只发送一次；核验通过后继续等待或收集客户确认。",
+            execution_events,
+            "核验证据：仅 1 次 ChannelSend、1 次 OutcomeVerify 和 1 次 CustomerConfirm，最终状态为 done。",
+        ),
+        OUT / SCREENSHOTS[4],
+    )
+
+    case_knowledge = OUT / "_case_knowledge_trace.jsonl"
+    try:
+        multichannel_events = run_trace(
+            "orchestrator.demo.script_c_multichannel_case",
+            "_multichannel_trace.jsonl",
+            "--knowledge-output",
+            str(case_knowledge),
         )
-
-    if not captured.get("04_高风险审批任务.png"):
-        print(
-            "ERROR: 04_高风险审批任务.png 未截到真实控制台。"
-            "请先启动 8765 服务后重跑：python docs/goai/build_submission_screenshots.py"
+        showcase_events = [
+            event
+            for event in multichannel_events
+            if event.get("event") == "duplicate_linked"
+            or event.get("skill") in {"SessionNormalize", "CustomerConfirm", "CaseDigest"}
+            or (
+                event.get("skill") == "CaseKnowledgeRetrieve"
+                and int((event.get("output") or {}).get("hit_count") or 0) > 0
+            )
+        ]
+        render_html_screenshot(
+            trace_html(
+                "跨渠道去重、客户确认与案例复用",
+                "企微仅使用统一 SessionEvent 离线契约，不声明真实渠道适配器已接入。",
+                showcase_events,
+                "剧本 C 证据：抖音首条任务完成并匿名归档；同内容企微任务被 deduplicated；后续咨询命中 case:// 引用后再次确认与沉淀。",
+            ),
+            OUT / SCREENSHOTS[5],
         )
+    finally:
+        case_knowledge.unlink(missing_ok=True)
 
-    if not captured.get("05_核验失败任务.png"):
-        print(
-            "ERROR: 05_核验失败任务.png 未截到真实控制台。"
-            "请先启动 8765 服务后重跑：python docs/goai/build_submission_screenshots.py"
-        )
-
-    if server_proc is not None:
-        server_proc.terminate()
-        try:
-            server_proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            server_proc.kill()
-
-    for tmp in OUT.glob("_ui_*.png"):
-        tmp.unlink(missing_ok=True)
-
-    print("written:", OUT)
-    for p in sorted(OUT.glob("*.png")):
-        print(" ", p.name, p.stat().st_size)
+    missing = [filename for filename in SCREENSHOTS if not (OUT / filename).is_file()]
+    if missing:
+        raise RuntimeError(f"Missing generated screenshots: {', '.join(missing)}")
+    print(f"Written {len(SCREENSHOTS)} redacted screenshots to {OUT}")
+    for filename in SCREENSHOTS:
+        path = OUT / filename
+        print(f"  {filename}: {path.stat().st_size} bytes")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,28 @@
+{
+  "skill": "CaseDigest",
+  "version": "0.1",
+  "input": {
+    "type": "object",
+    "required": ["task_id", "triage_result", "resolution"],
+    "properties": {
+      "task_id": { "type": "string" },
+      "channel": { "type": "string" },
+      "triage_result": { "type": "object" },
+      "verify_result": { "type": "object" },
+      "customer_confirm_result": { "type": "object" },
+      "resolution": { "type": "string", "enum": ["done", "failed", "escalated"] }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["case_id", "intent", "risk_tag", "resolution", "knowledge_snippet", "privacy"],
+    "properties": {
+      "case_id": { "type": "string" },
+      "intent": { "type": "string" },
+      "risk_tag": { "type": "string" },
+      "resolution": { "type": "string" },
+      "knowledge_snippet": { "type": "string" },
+      "privacy": { "type": "object" }
+    }
+  }
+}

@@ -18,6 +18,10 @@ class TaskContext:
     reply_draft: dict[str, Any] | None = None
     send_receipt: dict[str, Any] | None = None
     verify_result: dict[str, Any] | None = None
+    dedupe_result: dict[str, Any] | None = None
+    knowledge_hits: list[dict[str, Any]] = field(default_factory=list)
+    customer_confirm_result: dict[str, Any] | None = None
+    case_digest: dict[str, Any] | None = None
     state: str = "pending"
     need_approval: bool = False
     approval_token: str | None = None
@@ -42,6 +46,10 @@ class TaskContext:
             reply_draft=data.get("reply_draft"),
             send_receipt=data.get("send_receipt"),
             verify_result=data.get("verify_result"),
+            dedupe_result=data.get("dedupe_result"),
+            knowledge_hits=list(data.get("knowledge_hits") or []),
+            customer_confirm_result=data.get("customer_confirm_result"),
+            case_digest=data.get("case_digest"),
             state=str(data.get("state") or "pending"),
             need_approval=bool(data.get("need_approval")),
             approval_token=data.get("approval_token"),

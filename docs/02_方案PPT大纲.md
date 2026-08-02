@@ -7,12 +7,12 @@
 | P1 封面 | 私域客服自治工作台（AgentDesk） | 赛道：新智基座｜方向：智能客服自主闭环｜团队名 |
 | P2 背景与痛点 | 为什么需要 Agent Infra | 多渠道分散、回复不可验证、高风险无审批、经验难沉淀；单 Bot 不够 |
 | P3 场景与价值 | 目标用户与收益 | 私域运营/客服团队；提效、降错、可审计、可复制 |
-| P4 总体架构 | AgentTeams 分层架构图 | Manager–TL–Worker；5 Agent；Skill/MCP/渠道 Runtime 分层 |
-| P5 Agent 分工 | Agent Identity 一览 | 5 个 Agent 职责、边界、禁止事项（表格） |
+| P4 总体架构 | AgentTeams 分层架构图 | Manager–TL–Worker；6 Agent；Skill/MCP/渠道 Runtime/案例档案分层 |
+| P5 Agent 分工 | Agent Identity 一览 | 6 个 Agent 职责、边界、禁止事项（表格） |
 | P6 任务拆解与状态机 | 从入站到闭环 | Task 拆解步骤；SessionTL 状态流转图 |
-| P7 Skill 工程体系 | 5 个核心 Skill | 名称、输入输出、复用价值、失败处理（表格） |
+| P7 Skill 工程体系 | 7 个核心 Skill | 名称、输入输出、复用价值、失败处理（表格） |
 | P8 工具集成 | MCP 等价契约 | send/query/history 工具 Schema；迁移成本说明 |
-| P9 闭环与演示 | 两条剧本 | 主路径 + 高风险审批路径；抖音深做、企微扩展 |
+| P9 闭环与演示 | 三条剧本 | 主路径 + 高风险审批 + 跨渠道去重/客户确认/案例复用 |
 | P10 验证与审计 | 生产级保障 | OutcomeVerify、profile 隔离、审批回滚、证据沉淀 |
 | P11 可观测与上下文 | Trace/Log + 共享状态 | 4 选 2 能力说明；后续 AgentLoop 对接计划 |
 | P12 落地计划与开源 | 初赛→复赛→决赛 | 8.16 方案；复赛 AgentTeams 代码包；开源 Skill/Identity 模板 |
@@ -31,7 +31,8 @@ flowchart TB
         TL[SessionTL<br/>会话编排 TL]
         W1[ChannelIngress<br/>渠道接入]
         W2[TriageGuard<br/>意图风控]
-        W3[ActVerify<br/>执行核验]
+        W3[ActVerify<br/>执行核验与客户确认]
+        W4[CaseLearning<br/>案例检索与沉淀]
     end
 
     subgraph Skills["Skill 能力层"]
@@ -40,11 +41,13 @@ flowchart TB
         S3[ReplyPlan]
         S4[ChannelSend]
         S5[OutcomeVerify]
+        S6[CustomerConfirm]
+        S7[CaseDigest]
     end
 
     subgraph Tools["工具层 / MCP 等价"]
         T1[抖音 Runtime]
-        T2[企微 Hook API]
+        T2[企微统一契约 / 离线剧本]
         T3[知识检索]
     end
 
@@ -57,14 +60,16 @@ flowchart TB
     A1 --> W1
     A2 --> W1
     M --> TL
-    TL --> W1 & W2 & W3
+    TL --> W1 & W2 & W3 & W4
     W1 --> S1
     W2 --> S2 & S3
-    W3 --> S4 & S5
-    S4 --> T1 & T2
+    W3 --> S4 & S5 & S6
+    W4 --> S7
+    S4 --> T1
     S3 --> T3
     W3 --> E1
     M --> E2
+    W4 --> E3
     E1 --> E3
 ```
 
@@ -72,4 +77,4 @@ flowchart TB
 
 - 每页 1 张图 + 3–5 条要点，少堆字
 - P5/P7 可直接引用 `03_Agent_Identity清单.md`、`04_Skill清单.md` 表格
-- P9 用两条剧本讲清「不是会聊天，是会协作、会卡点、会留证」
+- P9 用三条剧本讲清「不是会聊天，是会协作、会去重、会确认、会留证」

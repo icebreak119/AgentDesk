@@ -1,4 +1,4 @@
-"""Generate AgentDesk architecture diagram (independent Runtime + AgentTeams)."""
+"""Generate the submission architecture diagram for AgentDesk."""
 
 from __future__ import annotations
 
@@ -13,133 +13,159 @@ OUT = ROOT / "06_架构图.png"
 plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Arial Unicode MS", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 
+INK = "#173B3A"
+MUTED = "#52606D"
+TEAL = "#2F8F83"
+BLUE = "#2A6F97"
+CORAL = "#E76F51"
+YELLOW = "#E9C46A"
+MINT = "#DDF3ED"
+SKY = "#DCECF7"
+PEACH = "#FCE9E2"
+PAPER = "#F7FAF9"
 
-def box(ax, x, y, w, h, text, face, edge="#1F2937", fontsize=10, bold=False, text_color="#0F172A"):
+
+def rounded_box(ax, x, y, width, height, text, *, face, edge="none", size=10, weight="normal", color=INK):
     patch = FancyBboxPatch(
         (x, y),
-        w,
-        h,
-        boxstyle="round,pad=0.02,rounding_size=0.03",
-        linewidth=1.2,
+        width,
+        height,
+        boxstyle="round,pad=0.02,rounding_size=0.10",
+        linewidth=1.1 if edge != "none" else 0,
         edgecolor=edge,
         facecolor=face,
     )
     ax.add_patch(patch)
-    weight = "bold" if bold else "normal"
-    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fontsize, weight=weight, color=text_color)
-
-
-def band(ax, y, h, label, color, *, alpha=0.32):
-    ax.add_patch(
-        FancyBboxPatch(
-            (0.03, y),
-            0.94,
-            h,
-            boxstyle="round,pad=0.01,rounding_size=0.02",
-            linewidth=0,
-            facecolor=color,
-            alpha=alpha,
-        )
+    ax.text(
+        x + width / 2,
+        y + height / 2,
+        text,
+        ha="center",
+        va="center",
+        fontsize=size,
+        weight=weight,
+        color=color,
+        linespacing=1.25,
     )
-    ax.text(0.02, y + h / 2, label, ha="left", va="center", fontsize=11, weight="bold", color="#0F172A")
 
 
-def badge(ax, x, y, text, face="#DCFCE7", edge="#16A34A", fontsize=8, text_color="#166534"):
-    box(ax, x, y, 0.11, 0.028, text, face, edge=edge, fontsize=fontsize, bold=True, text_color=text_color)
+def pill(ax, x, y, text, *, face, color=INK):
+    width = max(0.95, 0.16 * len(text) + 0.35)
+    rounded_box(ax, x, y, width, 0.28, text, face=face, edge="none", size=7.7, weight="bold", color=color)
 
 
-def arrow(ax, x1, y1, x2, y2):
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle="->", color="#334155", lw=1.4))
+def arrow(ax, start, end, *, label=""):
+    ax.annotate(
+        "",
+        xy=end,
+        xytext=start,
+        arrowprops={"arrowstyle": "-|>", "lw": 1.45, "color": INK, "shrinkA": 3, "shrinkB": 3},
+    )
+    if label:
+        ax.text(
+            (start[0] + end[0]) / 2,
+            (start[1] + end[1]) / 2 + 0.08,
+            label,
+            ha="center",
+            va="bottom",
+            fontsize=7.2,
+            color=MUTED,
+            bbox={"boxstyle": "round,pad=0.16", "facecolor": PAPER, "edgecolor": "none"},
+        )
+
+
+def band(ax, y, label, *, color):
+    rounded_box(ax, 0.30, y, 1.32, 0.58, label, face=color, edge="none", size=9.5, weight="bold")
 
 
 def build() -> None:
-    fig, ax = plt.subplots(figsize=(16, 10.5), dpi=180)
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    fig, ax = plt.subplots(figsize=(16, 9), dpi=180)
+    fig.patch.set_facecolor("white")
+    ax.set_xlim(0, 16)
+    ax.set_ylim(0, 9)
     ax.axis("off")
 
+    ax.text(8, 8.62, "AgentDesk: 智能客服自主闭环架构", ha="center", va="center", fontsize=22, weight="bold", color=INK)
     ax.text(
-        0.5,
-        0.975,
-        "AgentDesk 架构图 · 独立 Channel Runtime + AgentTeams",
+        8,
+        8.26,
+        "初赛可验证: 抖音 Runtime + 参考编排器 + 7 Skill + Trace + 匿名 CaseDigest | 企微: 统一契约 / 离线剧本 | 复赛: 官方 AgentTeams、完整 RAG、Trace UI",
         ha="center",
         va="center",
-        fontsize=18,
-        weight="bold",
-        color="#0B5CFF",
-    )
-    ax.text(
-        0.5,
-        0.945,
-        "初赛：Runtime + 参考编排器 + Skill 注册  |  复赛：AgentTeams 官方运行时 + Trace UI",
-        ha="center",
-        va="center",
-        fontsize=10,
-        color="#64748B",
+        fontsize=9.5,
+        color=MUTED,
     )
 
-    band(ax, 0.865, 0.075, "任务输入", "#DBEAFE")
-    box(ax, 0.16, 0.878, 0.28, 0.055, "抖音私信\nChannelIngress 入站", "#EFF6FF", fontsize=10, bold=True)
-    box(ax, 0.56, 0.878, 0.28, 0.055, "企业微信\n复赛扩展渠道", "#F8FAFC", edge="#CBD5E1", fontsize=10)
-    badge(ax, 0.395, 0.888, "初赛已接入")
-    badge(ax, 0.795, 0.888, "复赛计划", face="#FEF3C7", edge="#D97706", text_color="#92400E")
-    arrow(ax, 0.30, 0.878, 0.50, 0.845)
-    arrow(ax, 0.70, 0.878, 0.50, 0.845)
+    band(ax, 7.32, "任务输入", color=SKY)
+    rounded_box(ax, 2.05, 7.20, 4.35, 0.74, "抖音私信\n入站消息 -> SessionEvent\n初赛已接入", face="#EFF7FB", edge=BLUE, size=9.2, weight="bold")
+    rounded_box(ax, 7.05, 7.20, 3.60, 0.74, "企业微信\n统一契约 / 离线剧本\n非真实渠道接入", face="#F3F6F8", edge="#B9C5CC", size=8.8, color=MUTED)
+    rounded_box(ax, 11.30, 7.20, 2.95, 0.74, "跨渠道去重键\n匿名客户 + 归一内容\n5 分钟窗口", face="#F8FBFA", edge="#C9D8D5", size=8.2, color=MUTED)
 
-    band(ax, 0.735, 0.075, "AgentTeams · Manager", "#1E3A8A", alpha=0.18)
-    box(ax, 0.28, 0.752, 0.44, 0.065, "DutyManager 值班长\n任务拆解 / 审批升级 / 人工闸门", "#DBEAFE", fontsize=10, bold=True)
-    badge(ax, 0.685, 0.762, "参考实现", face="#DCFCE7", edge="#16A34A")
-    arrow(ax, 0.50, 0.752, 0.50, 0.725)
+    band(ax, 6.18, "Manager", color=MINT)
+    rounded_box(ax, 3.00, 6.10, 9.80, 0.75, "DutyManager (Manager)\n任务拆解 | 风险升级 | 审批闸门", face="#ECF7F4", edge=TEAL, size=11.2, weight="bold")
+    pill(ax, 11.40, 6.34, "参考实现", face="#DFF1E8", color=TEAL)
+    arrow(ax, (4.20, 7.20), (6.15, 6.86), label="归一任务")
+    arrow(ax, (8.85, 7.20), (8.00, 6.86), label="统一契约")
 
-    band(ax, 0.615, 0.075, "AgentTeams · Team Leader", "#2563EB", alpha=0.16)
-    box(ax, 0.28, 0.632, 0.44, 0.065, "SessionTL 会话编排\n调度 / TaskContext / 状态机", "#BFDBFE", fontsize=10, bold=True)
-    badge(ax, 0.685, 0.642, "参考实现", face="#DCFCE7", edge="#16A34A")
-    for x in (0.20, 0.50, 0.80):
-        arrow(ax, 0.50, 0.632, x, 0.598)
+    band(ax, 5.02, "Team Leader", color="#E7EEF7")
+    rounded_box(ax, 3.00, 4.94, 9.80, 0.75, "SessionTL (Team Leader)\nTaskContext 共享 | 去重拦截 | 状态机 | 4 Worker 调度", face="#EEF5FB", edge=BLUE, size=11.2, weight="bold")
+    pill(ax, 11.40, 5.18, "参考实现", face="#DFF1E8", color=TEAL)
+    arrow(ax, (8.00, 6.10), (8.00, 5.69))
 
-    band(ax, 0.495, 0.085, "AgentTeams · Workers", "#38BDF8", alpha=0.16)
-    box(ax, 0.07, 0.512, 0.25, 0.065, "ChannelIngress\n渠道接入 Worker", "#E0F2FE", fontsize=9.5)
-    box(ax, 0.375, 0.512, 0.25, 0.065, "TriageGuard\n意图风控 Worker", "#E0F2FE", fontsize=9.5)
-    box(ax, 0.68, 0.512, 0.25, 0.065, "ActVerify\n执行核验 Worker", "#E0F2FE", fontsize=9.5)
-    arrow(ax, 0.20, 0.512, 0.50, 0.468)
-    arrow(ax, 0.50, 0.512, 0.50, 0.468)
-    arrow(ax, 0.80, 0.512, 0.50, 0.468)
-
-    band(ax, 0.345, 0.085, "Skill 能力层", "#14B8A6", alpha=0.18)
-    skills = ["SessionNormalize", "IntentTriage", "ReplyPlan", "ChannelSend", "OutcomeVerify"]
-    for i, name in enumerate(skills):
-        box(ax, 0.05 + i * 0.19, 0.372, 0.16, 0.05, name, "#CCFBF1", fontsize=8.3)
-    badge(ax, 0.02, 0.382, "v0.1 可运行", face="#DCFCE7", edge="#16A34A", fontsize=7)
-    arrow(ax, 0.50, 0.372, 0.50, 0.328)
-
-    band(ax, 0.215, 0.095, "工具层 / MCP 等价契约", "#94A3B8", alpha=0.22)
-    box(
-        ax,
-        0.04,
-        0.228,
-        0.22,
-        0.06,
-        "抖音 Runtime\n8765 /console",
-        "#E0F2FE",
-        edge="#0B5CFF",
-        fontsize=9,
-        bold=True,
+    band(ax, 3.62, "Workers", color="#E8F4F4")
+    worker_y = 3.72
+    workers = (
+        (1.30, "ChannelIngress\n归一、跨渠道去重", "#F0FAF9", TEAL),
+        (4.55, "TriageGuard\n意图分级、方案", "#FFF9E9", YELLOW),
+        (7.80, "ActVerify\n执行、核验、客户确认", "#FFF4EF", CORAL),
+        (11.05, "CaseLearning\n标签检索、匿名沉淀", "#EEF5FB", BLUE),
     )
-    box(ax, 0.28, 0.228, 0.22, 0.06, "orchestrator/\ndemo + trace.jsonl", "#DBEAFE", edge="#0B5CFF", fontsize=9, bold=True)
-    box(ax, 0.52, 0.228, 0.22, 0.06, "contracts/*.json\nerrors/audit/idempotent", "#F1F5F9", fontsize=8.5)
-    box(ax, 0.76, 0.228, 0.20, 0.06, "企微 / RAG\n复赛", "#F8FAFC", edge="#CBD5E1", fontsize=9)
-    badge(ax, 0.195, 0.238, "已实现")
-    badge(ax, 0.435, 0.238, "参考实现", face="#DCFCE7", edge="#16A34A")
-    arrow(ax, 0.50, 0.228, 0.50, 0.185)
+    for x, label, face, edge in workers:
+        rounded_box(ax, x, worker_y, 2.65, 0.74, label, face=face, edge=edge, size=8.6, weight="bold")
+    for start_x, end_x in ((5.80, 2.63), (7.15, 5.88), (8.85, 9.13), (10.20, 12.38)):
+        arrow(ax, (start_x, 4.94), (end_x, 4.46))
 
-    band(ax, 0.075, 0.085, "证据与审计", "#F59E0B", alpha=0.18)
-    box(ax, 0.08, 0.092, 0.25, 0.055, "trace.jsonl\n跨 Agent 链路", "#FEF3C7", fontsize=9)
-    box(ax, 0.375, 0.092, 0.25, 0.055, "审批闸门\nApprovalToken", "#FEF3C7", fontsize=9)
-    box(ax, 0.67, 0.092, 0.25, 0.055, "Trace UI\n复赛", "#FEF3C7", fontsize=9)
-    badge(ax, 0.285, 0.098, "剧本B", face="#DCFCE7", edge="#16A34A", fontsize=7)
+    band(ax, 2.42, "Skill", color="#F9F3DF")
+    skill_y = 2.50
+    skill_x = [0.95, 3.00, 5.05, 7.10, 9.15, 11.20, 13.25]
+    skill_names = [
+        "Session\nNormalize",
+        "Intent\nTriage",
+        "Reply\nPlan",
+        "Channel\nSend",
+        "Outcome\nVerify",
+        "Customer\nConfirm",
+        "Case\nDigest",
+    ]
+    for x, name in zip(skill_x, skill_names):
+        rounded_box(ax, x, skill_y, 1.82, 0.62, name, face="#FFF9E9", edge=YELLOW, size=7.8, weight="bold")
+    for start_x, end_x in (
+        (2.63, 1.86),
+        (5.88, 3.91),
+        (5.88, 5.96),
+        (9.13, 8.01),
+        (9.13, 10.06),
+        (9.13, 12.11),
+        (12.38, 14.16),
+    ):
+        arrow(ax, (start_x, 3.72), (end_x, 3.12))
 
-    fig.tight_layout()
-    fig.savefig(OUT, bbox_inches="tight", facecolor="white")
+    band(ax, 1.26, "工具 / 契约", color=PEACH)
+    rounded_box(ax, 1.25, 1.30, 3.05, 0.62, "抖音 Channel Runtime\nHTTP 8765 / Web Console", face="#FFF4EF", edge=CORAL, size=9.0, weight="bold")
+    rounded_box(ax, 5.15, 1.30, 3.20, 0.62, "MCP 等价契约\nSchema | 幂等 | 审计 | 错误码", face="#FFF4EF", edge=CORAL, size=8.8, weight="bold")
+    rounded_box(ax, 10.20, 1.30, 4.10, 0.62, "企业微信统一契约 / 离线剧本\n渠道 Adapter 待真实接入", face="#F5F7F8", edge="#B9C5CC", size=8.5, color=MUTED)
+    arrow(ax, (8.01, 2.50), (2.78, 1.92))
+    arrow(ax, (8.01, 2.50), (6.75, 1.92))
+
+    band(ax, 0.28, "证据 / 安全", color="#E8ECEB")
+    rounded_box(ax, 1.10, 0.31, 2.90, 0.56, "trace.jsonl\ntask / agent / skill / status", face="#F7FAF9", edge="#AFC4BF", size=8.2, weight="bold")
+    rounded_box(ax, 4.70, 0.31, 2.90, 0.56, "审批与隔离\nApprovalToken | profile scope", face="#F7FAF9", edge="#AFC4BF", size=8.2, weight="bold")
+    rounded_box(ax, 8.30, 0.31, 2.90, 0.56, "执行证据\nreceipt | verify | confirm", face="#F7FAF9", edge="#AFC4BF", size=8.2, weight="bold")
+    rounded_box(ax, 11.90, 0.31, 2.90, 0.56, "案例档案 JSONL\n标签 | case:// | 隐私校验", face="#EEF5FB", edge=BLUE, size=8.0, weight="bold")
+    arrow(ax, (6.75, 1.30), (6.15, 0.87))
+    arrow(ax, (14.16, 2.50), (13.35, 0.87))
+
+    fig.savefig(OUT, dpi=180, bbox_inches="tight", pad_inches=0.12, facecolor="white")
     plt.close(fig)
     print(f"Wrote {OUT}")
 

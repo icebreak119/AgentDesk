@@ -80,7 +80,12 @@ def load_im_accounts_from_db(db_path, account_code=None, enabled_only=True):
 
     conn = _connect(db_path)
     try:
-        rows = conn.execute(sql, params).fetchall()
+        try:
+            rows = conn.execute(sql, params).fetchall()
+        except sqlite3.OperationalError as exc:
+            if "no such table: im_accounts" not in str(exc).lower():
+                raise
+            rows = []
     finally:
         conn.close()
 

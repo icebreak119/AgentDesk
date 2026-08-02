@@ -1,7 +1,14 @@
 # Runtime artifacts
 runtime/douyin/channels/douyin_all_user/reverse_runtime/*.db
+runtime/douyin/channels/douyin_all_user/reverse_runtime/*.db-wal
+runtime/douyin/channels/douyin_all_user/reverse_runtime/*.db-shm
 runtime/douyin/channels/douyin_all_user/reverse_runtime/profiles/
 runtime/douyin/channels/douyin_all_user/reverse_runtime/logs/
+runtime/douyin/channels/douyin_all_user/reverse_runtime/avatars/
+runtime/douyin/channels/douyin_all_user/reverse_runtime/message_images/
+runtime/douyin/channels/douyin_all_user/reverse_runtime/message_emojis/
+runtime/douyin/channels/douyin_all_user/reverse_runtime/message_videos/
+runtime/douyin/channels/douyin_all_user/reverse_runtime/static/node_modules/
 runtime/douyin/channels/douyin_all_user/reverse_runtime/.env*
 __pycache__/
 *.pyc

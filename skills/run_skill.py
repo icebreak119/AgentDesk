@@ -13,6 +13,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ROOT.parent
 
+# Skills can depend on shared orchestrator models when invoked as standalone CLI tools.
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 
 def _load_registry() -> dict[str, Any]:
     try:
