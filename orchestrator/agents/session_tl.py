@@ -167,7 +167,7 @@ class SessionTL:
         publish_case: bool = True,
         emit_notification_event: bool = False,
     ) -> TaskContext:
-        self._transition(ctx, trace, ctx.state, "acting")
+        self._transition(ctx, trace, from_state, "acting")
 
         send_receipt = act_verify.send(ctx, live=live or ctx.mode == "live", base_url=base_url)
         ctx.send_receipt = send_receipt
@@ -435,7 +435,7 @@ class SessionTL:
             "DutyManager",
             event="approval_granted",
             status="ok",
-            output={"approval_scope": ctx.profile_id},
+            output={"approval_scope": ctx.approval_scope},
         )
         if (ctx.triage_result or {}).get("requested_action") == "refund":
             return self.execute_business_action_and_notify(
@@ -449,4 +449,4 @@ class SessionTL:
                 enterprise_base_url=enterprise_base_url,
                 inject_rollback_failure=inject_rollback_failure,
             )
-        return self.execute_send_verify(ctx, trace, from_state="suspended", live=live, base_url=base_url)
+        return self.execute_send_verify(ctx, trace, from_state="approved", live=live, base_url=base_url)

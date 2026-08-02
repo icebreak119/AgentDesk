@@ -244,6 +244,7 @@ def test_script_b_rollback_failure_escalates_to_human(tmp_path: Path):
 
 def test_business_action_is_idempotent_and_conflict_safe(tmp_path: Path):
     from orchestrator.models.business_action import JsonlBusinessActionAdapter
+    from orchestrator.models.approval import issue_approval_token
 
     payload = {
         "task_id": "task_action_test",
@@ -254,19 +255,24 @@ def test_business_action_is_idempotent_and_conflict_safe(tmp_path: Path):
         "currency": "CNY",
         "reason": "测试退款",
         "idempotency_key": "task_action_test:business_action:1",
-        "approval_token": "approval_test",
+        "approval_token": "",
     }
+    payload["approval_token"] = issue_approval_token(payload)
     adapter = JsonlBusinessActionAdapter(tmp_path / "actions.jsonl")
     first = adapter.execute(payload)
     repeat = adapter.execute(payload)
-    conflict = adapter.execute({**payload, "amount": "29.90"})
+    conflict_payload = {**payload, "amount": "29.90"}
+    conflict_payload["approval_token"] = issue_approval_token(conflict_payload)
+    conflict = adapter.execute(conflict_payload)
     assert first["status"] == "executed"
     assert repeat["operation_id"] == first["operation_id"]
     assert conflict["error_code"] == "idempotency_conflict"
     verify_failed = adapter.verify(payload, first, inject_failure=True)
     rollback = adapter.rollback(payload, first)
+    verify_after_rollback = adapter.verify(payload, first)
     assert verify_failed["status"] == "failed"
     assert rollback["status"] == "rolled_back"
+    assert verify_after_rollback["error_code"] == "action_already_rolled_back"
     raw = (tmp_path / "actions.jsonl").read_text(encoding="utf-8")
     assert "测试退款" in raw
     assert "customer_feedback" not in raw
@@ -293,8 +299,58 @@ def test_business_action_worker_requires_approval_state(tmp_path: Path):
     assert not (tmp_path / "actions.jsonl").exists()
 
 
+def test_business_action_worker_rejects_unscoped_approval(tmp_path: Path):
+    from orchestrator.agents.workers import act_verify
+    from orchestrator.models.approval import issue_approval_token
+    from orchestrator.models.task_context import TaskContext
+
+    ctx = TaskContext(
+        task_id="task_scope",
+        profile_id="profile_test",
+        session_id="session_test",
+        channel="douyin",
+        state="approved",
+        need_approval=True,
+        approval_token=issue_approval_token({
+            "task_id": "other_task",
+            "profile_id": "profile_test",
+            "action_type": "refund",
+            "order_id": "order_test_001",
+            "amount": "19.90",
+            "currency": "CNY",
+            "reason": "测试退款",
+            "idempotency_key": "other_task:business_action:1",
+            "approval_token": "placeholder",
+        }),
+        triage_result={"requested_action": "refund"},
+        raw_event={"order_id": "order_test_001", "amount": "19.90", "refund_reason": "测试退款"},
+    )
+    result = act_verify.execute_business_action(ctx, path=tmp_path / "actions.jsonl")
+    assert result["error_code"] == "approval_scope_invalid"
+    assert not (tmp_path / "actions.jsonl").exists()
+
+
+def test_state_transition_rejects_wrong_execute_source(tmp_path: Path):
+    from orchestrator.agents.session_tl import SessionTL
+    from orchestrator.models.task_context import TaskContext
+    from orchestrator.models.trace import TraceWriter
+
+    ctx = TaskContext(
+        task_id="task_state",
+        profile_id="profile_test",
+        session_id="session_test",
+        channel="douyin",
+        state="suspended",
+        reply_draft={"draft_text": "test"},
+    )
+    with TraceWriter(tmp_path / "trace.jsonl") as trace:
+        with pytest.raises(RuntimeError, match="状态转移来源不一致"):
+            SessionTL().execute_send_verify(ctx, trace, from_state="planning")
+
+
 def test_business_action_jsonl_excludes_identity_content_and_credentials(tmp_path: Path):
     from orchestrator.models.business_action import JsonlBusinessActionAdapter
+    from orchestrator.models.approval import issue_approval_token
 
     payload = {
         "task_id": "task_privacy",
@@ -305,8 +361,9 @@ def test_business_action_jsonl_excludes_identity_content_and_credentials(tmp_pat
         "currency": "CNY",
         "reason": "客户申请退款",
         "idempotency_key": "task_privacy:business_action:1",
-        "approval_token": "secret-token-not-for-log",
+        "approval_token": "",
     }
+    payload["approval_token"] = issue_approval_token(payload)
     adapter = JsonlBusinessActionAdapter(tmp_path / "actions.jsonl")
     adapter.execute(payload)
     raw = (tmp_path / "actions.jsonl").read_text(encoding="utf-8")

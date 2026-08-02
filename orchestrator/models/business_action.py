@@ -13,6 +13,8 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
+from orchestrator.models.approval import validate_approval_token
+
 _TZ = timezone(timedelta(hours=8))
 _FILE_LOCK = threading.RLock()
 _SKILL_PATH = Path(__file__).resolve().parents[2] / "skills" / "business_action" / "v0.1" / "skill.py"
@@ -65,6 +67,8 @@ class JsonlBusinessActionAdapter:
 
     def execute(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = _validate_request(payload)
+        if not validate_approval_token(request, request["approval_token"]):
+            return self._result(request, status="failed", error_code="approval_scope_invalid")
         fingerprint = _fingerprint(request)
         with _FILE_LOCK:
             existing = [
@@ -113,6 +117,8 @@ class JsonlBusinessActionAdapter:
 
     def verify(self, payload: dict[str, Any], receipt: dict[str, Any], *, inject_failure: bool = False) -> dict[str, Any]:
         request = _validate_request(payload)
+        if not validate_approval_token(request, request["approval_token"]):
+            return self._result(request, status="failed", error_code="approval_scope_invalid")
         operation_id = str(receipt.get("operation_id") or "")
         if inject_failure:
             return self._result(request, status="failed", operation_id=operation_id, error_code="verification_mismatch")
@@ -120,6 +126,24 @@ class JsonlBusinessActionAdapter:
             return self._result(request, status="failed", operation_id=operation_id, error_code="action_not_executed")
         fingerprint = _fingerprint(request)
         with _FILE_LOCK:
+            rollback = next(
+                (
+                    item
+                    for item in self._records()
+                    if item.get("operation_id") == f"rollback_{operation_id}"
+                    and item.get("rollback_of") == operation_id
+                    and item.get("status") == "rolled_back"
+                ),
+                None,
+            )
+            if rollback:
+                return self._result(
+                    request,
+                    status="failed",
+                    operation_id=operation_id,
+                    error_code="action_already_rolled_back",
+                    rollback_of=operation_id,
+                )
             record = next(
                 (item for item in self._records() if item.get("operation_id") == operation_id),
                 None,
@@ -137,6 +161,8 @@ class JsonlBusinessActionAdapter:
 
     def rollback(self, payload: dict[str, Any], receipt: dict[str, Any]) -> dict[str, Any]:
         request = _validate_request(payload)
+        if not validate_approval_token(request, request["approval_token"]):
+            return self._result(request, status="failed", error_code="approval_scope_invalid")
         operation_id = str(receipt.get("operation_id") or "")
         if not operation_id:
             return self._result(request, status="failed", error_code="rollback_target_missing")

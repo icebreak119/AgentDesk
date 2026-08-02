@@ -28,6 +28,7 @@ class TaskContext:
     state: str = "pending"
     need_approval: bool = False
     approval_token: str | None = None
+    approval_scope: str | None = None
     mode: str = "mock"
     raw_event: dict[str, Any] = field(default_factory=dict)
 
@@ -74,6 +75,7 @@ class TaskContext:
             state=str(data.get("state") or "pending"),
             need_approval=bool(data.get("need_approval")),
             approval_token=None if approval_token == "[REDACTED]" else approval_token,
+            approval_scope=data.get("approval_scope"),
             mode=str(data.get("mode") or "mock"),
             raw_event=dict(raw_event) if isinstance(raw_event, dict) else {},
         )

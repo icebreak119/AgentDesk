@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $StateDir = Join-Path $Root "tmp\demo_services"
 $StatePath = Join-Path $StateDir "services.json"
+$EvidencePath = Join-Path $StateDir ("enterprise_business_evidence_{0}.jsonl" -f (Get-Date -Format "yyyyMMdd_HHmmss_fff"))
 New-Item -ItemType Directory -Force $StateDir | Out-Null
 
 foreach ($port in @($EnterprisePort, $WecomPort, $DemoPort)) {
@@ -33,7 +34,7 @@ function Start-AgentDeskService {
     return $process.Id
 }
 
-$enterprisePid = Start-AgentDeskService "enterprise" @("-m", "enterprise_simulator.server", "--host", "127.0.0.1", "--port", "$EnterprisePort")
+$enterprisePid = Start-AgentDeskService "enterprise" @("-m", "enterprise_simulator.server", "--host", "127.0.0.1", "--port", "$EnterprisePort", "--evidence-log", $EvidencePath)
 $wecomPid = Start-AgentDeskService "wecom" @("-m", "runtime.wecom.server", "--host", "127.0.0.1", "--port", "$WecomPort")
 $demoPid = Start-AgentDeskService "demo" @("-m", "demo_runtime.server", "--repo-root", $Root, "--host", "127.0.0.1", "--port", "$DemoPort", "--enterprise-url", "http://127.0.0.1:$EnterprisePort", "--wecom-url", "http://127.0.0.1:$WecomPort", "--gateway-url", "http://127.0.0.1:$DemoPort")
 

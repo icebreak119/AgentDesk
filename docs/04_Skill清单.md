@@ -136,7 +136,7 @@
 | 依赖工具 | 初赛 `HttpBusinessActionAdapter` → `enterprise_simulator`；`JsonlBusinessActionAdapter` 保留为离线测试后端；复赛替换为订单/支付系统 Adapter |
 | 失败处理 | 执行失败不发送成功通知；核验失败触发补偿回滚，回滚失败升级人工 |
 | 验证方式 | 操作 ID、请求指纹、状态和回滚关联关系校验 |
-| 安全边界 | 未审批、参数缺失、幂等冲突或币种不支持均拒绝执行 |
+| 安全边界 | 必须校验绑定 `task_id + profile_id + action_type + order_id + amount + currency + reason + idempotency_key` 的短时效 ApprovalToken；未审批、令牌缺失/过期/范围不匹配、参数缺失、幂等冲突或币种不支持均拒绝执行 |
 | 复用价值 | ERP、订单、支付系统只需替换适配器，Agent/Skill/Trace 接口不变 |
 | 与多 Agent 关系 | ActVerify 在 DutyManager 放行后调用，结果决定通知、回滚和案例终态 |
 

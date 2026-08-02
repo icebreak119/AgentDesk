@@ -18,6 +18,8 @@ from fastapi.responses import HTMLResponse
 from orchestrator.agents.duty_manager import DutyManager
 from orchestrator.agents.session_tl import SessionTL
 from orchestrator.models.conversation_ledger import ConversationLedger
+from orchestrator.agents.workers.act_verify import business_action_request
+from orchestrator.models.approval import issue_approval_token
 from orchestrator.models.session_event import normalize_session_event
 from orchestrator.models.trace import TraceWriter, input_hash
 
@@ -196,7 +198,7 @@ def _run_workflow(
                 status="suspended",
             )
             time.sleep(0.9)
-            duty_manager.grant_approval(ctx, "appr_token_live_demo")
+            duty_manager.grant_approval(ctx, issue_approval_token(business_action_request(ctx)))
             demo.emit(
                 "approval",
                 "人工审批 · granted",

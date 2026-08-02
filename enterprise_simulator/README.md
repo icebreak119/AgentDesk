@@ -8,6 +8,8 @@
 python -m enterprise_simulator.server --port 8770
 ```
 
+未指定 `--evidence-log` 时，服务会为本次启动创建独立的 JSONL 文件；需要验证重启恢复时，再显式传入同一个证据文件。
+
 接口：
 
 - `GET /enterprise/orders/{order_id}`：订单查询

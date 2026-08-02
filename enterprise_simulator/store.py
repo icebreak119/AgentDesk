@@ -10,6 +10,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from orchestrator.models.approval import validate_approval_token
 from orchestrator.models.business_action import _fingerprint, _validate_request
 
 _TZ = timezone(timedelta(hours=8))
@@ -71,7 +72,8 @@ class EnterpriseBusinessStore:
                 self.operations[operation_id] = {
                     key: record.get(key)
                     for key in (
-                        "operation_id", "profile_id", "order_id", "amount", "currency",
+                        "operation_id", "profile_id", "task_id", "order_id", "amount", "currency",
+                        "reason",
                         "idempotency_key", "request_fingerprint", "status", "evidence_ref",
                         "rollback_of",
                     )
@@ -81,6 +83,22 @@ class EnterpriseBusinessStore:
                     original = self.operations.get(original_id)
                     if original is not None:
                         original["status"] = "rolled_back"
+                    self._change_refundable_amount(
+                        str(record.get("order_id") or ""),
+                        Decimal(str(record.get("amount") or "0")),
+                    )
+                elif record.get("event") == "refund_executed":
+                    self._change_refundable_amount(
+                        str(record.get("order_id") or ""),
+                        -Decimal(str(record.get("amount") or "0")),
+                    )
+
+    def _change_refundable_amount(self, order_id: str, delta: Decimal) -> None:
+        order = self.orders.get(order_id)
+        if order is None:
+            return
+        amount = Decimal(str(order["refundable_amount"])) + delta
+        order["refundable_amount"] = format(amount.quantize(Decimal("0.01")), "f")
 
     def _audit(self, record: dict[str, Any]) -> None:
         self.evidence_path.parent.mkdir(parents=True, exist_ok=True)
@@ -104,13 +122,9 @@ class EnterpriseBusinessStore:
 
     def apply_refund(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = _validate_request(payload)
+        if not validate_approval_token(request, request["approval_token"]):
+            raise ValueError("approval_scope_invalid")
         with self._lock:
-            order = self.query_order(request["profile_id"], request["order_id"])
-            if request["currency"] != order["currency"]:
-                raise ValueError("order_currency_mismatch")
-            if Decimal(request["amount"]) > Decimal(order["refundable_amount"]):
-                raise ValueError("amount_exceeds_refundable")
-
             fingerprint = _fingerprint(request)
             existing = next(
                 (
@@ -125,15 +139,23 @@ class EnterpriseBusinessStore:
                     raise ValueError("idempotency_conflict")
                 return self._action_result(existing)
 
+            order = self.query_order(request["profile_id"], request["order_id"])
+            if request["currency"] != order["currency"]:
+                raise ValueError("order_currency_mismatch")
+            if Decimal(request["amount"]) > Decimal(order["refundable_amount"]):
+                raise ValueError("amount_exceeds_refundable")
+
             operation_id = "refund_op_" + hashlib.sha256(
                 f"{request['profile_id']}:{request['idempotency_key']}".encode("utf-8")
             ).hexdigest()[:16]
             operation = {
                 "operation_id": operation_id,
                 "profile_id": request["profile_id"],
+                "task_id": request["task_id"],
                 "order_id": request["order_id"],
                 "amount": request["amount"],
                 "currency": request["currency"],
+                "reason": request["reason"],
                 "idempotency_key": request["idempotency_key"],
                 "request_fingerprint": fingerprint,
                 "status": "refund_requested",
@@ -166,6 +188,23 @@ class EnterpriseBusinessStore:
                 return self._action_result(operation)
             if operation["status"] == "rolled_back":
                 raise ValueError("operation_already_rolled_back")
+            request = {
+                "task_id": operation.get("task_id") or operation_id,
+                "profile_id": operation["profile_id"],
+                "action_type": "refund",
+                "order_id": operation["order_id"],
+                "amount": operation["amount"],
+                "currency": operation["currency"],
+                "reason": operation.get("reason") or "客户申请退款",
+                "idempotency_key": operation["idempotency_key"],
+                "approval_token": approval_token,
+            }
+            if not validate_approval_token(request, approval_token):
+                raise ValueError("approval_scope_invalid")
+            order = self.orders.get(operation["order_id"])
+            if not order or Decimal(operation["amount"]) > Decimal(order["refundable_amount"]):
+                raise ValueError("amount_exceeds_refundable")
+            self._change_refundable_amount(operation["order_id"], -Decimal(operation["amount"]))
             operation["status"] = "executed"
             operation["evidence_ref"] = f"action://enterprise/receipt/{operation_id}"
             self._audit({
@@ -205,6 +244,19 @@ class EnterpriseBusinessStore:
                 return self._action_result(existing, rollback_of=operation_id)
             if original["status"] != "executed":
                 raise ValueError("operation_not_executed")
+            request = {
+                "task_id": original.get("task_id") or operation_id,
+                "profile_id": original["profile_id"],
+                "action_type": "refund",
+                "order_id": original["order_id"],
+                "amount": original["amount"],
+                "currency": original["currency"],
+                "reason": original.get("reason") or "客户申请退款",
+                "idempotency_key": original["idempotency_key"],
+                "approval_token": approval_token,
+            }
+            if not validate_approval_token(request, approval_token):
+                raise ValueError("approval_scope_invalid")
             rollback = {
                 "operation_id": rollback_id,
                 "profile_id": profile_id,
@@ -219,6 +271,7 @@ class EnterpriseBusinessStore:
             }
             self.operations[rollback_id] = rollback
             original["status"] = "rolled_back"
+            self._change_refundable_amount(original["order_id"], Decimal(original["amount"]))
             self._audit({
                 "event": "refund_rolled_back",
                 **{key: rollback[key] for key in (

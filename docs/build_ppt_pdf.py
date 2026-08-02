@@ -308,8 +308,8 @@ def cover(c: canvas.Canvas) -> None:
         rounded(c, 421, 159, 372, 250, fill=INK_SOFT, stroke=INK_LINE, radius=14, line_width=1.1)
     line(c, 48, 130, PAGE_W - 48, 130, INK_LINE, 0.9)
     metric(c, 48, 87, "06", "Agent Identity", MINT, dark=True)
-    metric(c, 169, 87, "07", "可复用 Skill", GOLD, dark=True)
-    metric(c, 300, 87, "72", "pytest 断言", CORAL, dark=True)
+    metric(c, 169, 87, "08", "可复用 Skill", GOLD, dark=True)
+    metric(c, 300, 87, "75", "pytest 断言", CORAL, dark=True)
     c.setFillColor(colors.HexColor("#9CAAAA"))
     c.setFont(MONO, 8.5)
     c.drawRightString(PAGE_W - 48, 92, "DOUYIN RUNTIME / REFERENCE ORCHESTRATOR / TRACE")
@@ -630,7 +630,7 @@ def skills(c: canvas.Canvas) -> None:
         c.setFont(FONT, 8.6)
         c.drawRightString(772, y, note)
     rounded(c, 48, 55, 746, 32, fill=colors.HexColor("#172128"), stroke=INK_LINE, radius=6, line_width=0.8)
-    paragraph(c, "统一能力契约: Schema | AuthZ | Idempotency | Error Code | Audit | Fallback | Privacy", 67, 78, 708, text_style("skills-contract", 9.8, 13, colors.HexColor("#D1DDDC"), TA_CENTER, MONO))
+    paragraph(c, "统一能力契约: Schema | AuthZ | Idempotency | Error Code | Audit | Fallback | Privacy", 67, 78, 708, text_style("skills-contract", 9.8, 13, colors.HexColor("#D1DDDC"), TA_CENTER, FONT))
 
 
 def web_login(c: canvas.Canvas) -> None:
@@ -688,7 +688,7 @@ def verification(c: canvas.Canvas) -> None:
     light_header(c, 11, "10 / Local Verification", "评审要看的，不是演示话术。", "可复现命令、剧本 Trace、Skill CLI 输出和契约测试共同构成初赛阶段的工程证据。")
     c.setFillColor(CORAL)
     c.setFont(FONT_BOLD, 78)
-    c.drawString(48, 252, "72")
+    c.drawString(48, 252, "75")
     c.setFillColor(INK)
     c.setFont(FONT_BOLD, 20)
     c.drawString(48, 213, "tests passed")
@@ -712,7 +712,7 @@ def verification(c: canvas.Canvas) -> None:
         "python skills/run_skill.py intent_triage -i ... --pretty",
     )
     for index, command in enumerate(commands):
-        y = 314 - index * 22
+        y = 314 - index * 18
         c.setFillColor(colors.HexColor("#5E7271"))
         c.setFont(MONO, 8.7)
         c.drawString(316, y, ">")
@@ -791,7 +791,7 @@ def agentteams_contract(c: canvas.Canvas) -> None:
     c.setFillColor(colors.HexColor("#B6C7C5"))
     c.setFont(FONT, 9.4)
     c.drawString(68, 104, "审批令牌不进 Trace；BusinessAction 核验通过后才允许通知；回滚失败进入 human_review。")
-    paragraph(c, "CONTRACT: docs/18_AgentTeams.md  |  REPORT: docs/19_evaluation.md", 48, 61, 746, text_style("contract-ref", 9.7, 13, MUTED, TA_CENTER, MONO))
+    paragraph(c, "CONTRACT: docs/18_AgentTeams映射与接口契约.md  |  REPORT: docs/19_量化评测报告.md", 48, 61, 746, text_style("contract-ref", 8.8, 12, MUTED, TA_CENTER, FONT))
 
 
 def evaluation_scorecard(c: canvas.Canvas) -> None:
@@ -816,11 +816,11 @@ def evaluation_scorecard(c: canvas.Canvas) -> None:
     c.drawString(68, 151, "LOCAL PERFORMANCE")
     c.setFillColor(WARM_WHITE)
     c.setFont(FONT_BOLD, 18)
-    c.drawString(68, 126, "P95 271.69 ms")
+    c.drawString(68, 126, "P95 290.33 ms")
     c.setFillColor(colors.HexColor("#B6C7C5"))
     c.setFont(FONT, 10)
     c.drawString(210, 129, "12 次成功剧本运行 · JSONL Mock · 不代表生产 ERP / 支付 / 渠道延迟")
-    paragraph(c, "REPORT: docs/19_evaluation.md  |  RUN: python evaluation/run_evaluation.py", 48, 73, 746, text_style("scorecard-ref", 10.2, 14, colors.HexColor("#B6C7C5"), TA_CENTER, MONO))
+    paragraph(c, "REPORT: docs/19_量化评测报告.md  |  RUN: python evaluation/run_evaluation.py", 48, 73, 746, text_style("scorecard-ref", 9.2, 13, colors.HexColor("#B6C7C5"), TA_CENTER, FONT))
 
 
 SLIDES = (

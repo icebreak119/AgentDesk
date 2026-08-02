@@ -29,7 +29,7 @@
   "payload": {
     "skill": "BusinessAction",
     "action_type": "refund",
-    "approval_scope": "profile:d6a26b9e-demo"
+    "approval_scope": "sha256:refund-request-scope"
   },
   "evidence_refs": ["trace://task_002/business_action_requested"],
   "expected_state": "acting"
@@ -75,7 +75,8 @@ pending
 ## 5. 必须保持的不变量
 
 1. `approval_token` 缺失时不得创建退款操作。
-2. `business_action_verified=verified` 之前不得发送退款成功通知。
-3. 回滚失败必须进入 `escalated`，Trace 必须包含 `next_action=human_review`。
-4. 每个企业动作使用 `profile_id + idempotency_key` 幂等。
-5. Trace、业务动作 JSONL 和案例档案不得写入客户原文、姓名或账号凭据。
+2. `approval_token` 过期、签名无效或范围与当前任务/账号/动作/订单/金额/原因/幂等键不匹配时不得执行。
+3. `business_action_verified=verified` 之前不得发送退款成功通知。
+4. 回滚失败必须进入 `escalated`，Trace 必须包含 `next_action=human_review`。
+5. 每个企业动作使用 `profile_id + idempotency_key` 幂等。
+6. Trace、业务动作 JSONL 和案例档案不得写入客户原文、姓名或账号凭据。

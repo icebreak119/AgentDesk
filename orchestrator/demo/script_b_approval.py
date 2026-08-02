@@ -9,6 +9,8 @@ from pathlib import Path
 from orchestrator.agents.duty_manager import DutyManager
 from orchestrator.demo.artifacts import sidecar_path
 from orchestrator.agents.session_tl import SessionTL
+from orchestrator.agents.workers.act_verify import business_action_request
+from orchestrator.models.approval import issue_approval_token
 from orchestrator.models.trace import TraceWriter
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -84,7 +86,7 @@ def run(
             print(json.dumps(ctx.to_wire_dict(), ensure_ascii=False, indent=2))
             return ctx
 
-        duty_manager.grant_approval(ctx, "appr_token_demo_001")
+        duty_manager.grant_approval(ctx, issue_approval_token(business_action_request(ctx)))
         ctx = session_tl.resume_after_approval(
             ctx,
             trace,

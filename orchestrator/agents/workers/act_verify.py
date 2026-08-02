@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from orchestrator.models.business_action import HttpBusinessActionAdapter, JsonlBusinessActionAdapter
+from orchestrator.models.approval import approval_scope, validate_approval_token
 from orchestrator.models.task_context import TaskContext
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -203,13 +204,16 @@ def execute_business_action(
 ) -> dict[str, Any]:
     if ctx.state not in {"approved", "acting"} or not ctx.need_approval or not ctx.approval_token:
         return _failed_business_action(ctx, "approval_required")
+    request = business_action_request(ctx)
+    if ctx.approval_scope != approval_scope(request) or not validate_approval_token(request, ctx.approval_token):
+        return _failed_business_action(ctx, "approval_scope_invalid")
     try:
         adapter = _business_adapter(
             backend=backend,
             path=path,
             enterprise_base_url=enterprise_base_url,
         )
-        return adapter.execute(business_action_request(ctx))
+        return adapter.execute(request)
     except (TypeError, ValueError) as exc:
         return _failed_business_action(ctx, exc)
 
@@ -224,12 +228,15 @@ def verify_business_action(
     enterprise_base_url: str = "http://127.0.0.1:8770",
 ) -> dict[str, Any]:
     try:
+        request = business_action_request(ctx)
+        if not ctx.approval_token or not validate_approval_token(request, ctx.approval_token):
+            return _failed_business_action(ctx, "approval_scope_invalid")
         adapter = _business_adapter(
             backend=backend,
             path=path,
             enterprise_base_url=enterprise_base_url,
         )
-        return adapter.verify(business_action_request(ctx), receipt, inject_failure=inject_failure)
+        return adapter.verify(request, receipt, inject_failure=inject_failure)
     except (TypeError, ValueError) as exc:
         return _failed_business_action(ctx, exc)
 
@@ -251,12 +258,15 @@ def rollback_business_action(
             rollback_of=str(receipt.get("operation_id") or ""),
         )
     try:
+        request = business_action_request(ctx)
+        if not ctx.approval_token or not validate_approval_token(request, ctx.approval_token):
+            return _failed_business_action(ctx, "approval_scope_invalid")
         adapter = _business_adapter(
             backend=backend,
             path=path,
             enterprise_base_url=enterprise_base_url,
         )
-        return adapter.rollback(business_action_request(ctx), receipt)
+        return adapter.rollback(request, receipt)
     except (TypeError, ValueError) as exc:
         return _failed_business_action(ctx, exc)
 
