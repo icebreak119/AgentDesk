@@ -1,18 +1,13 @@
 作品名称：私域客服自治工作台（AgentDesk）
 
 【问题与场景】
-企业私域客服的会话分散、回复不可验证、高风险缺审批、经验难复用，单 Bot 难以完成企业级闭环。
+企业客服会话分散，容易重复处理，结果难验证，高风险动作缺审批，经验难复用。单一 Bot 难完成企业级闭环。
 
 【核心方案】
-以 AgentTeams Manager–Team Leader–Worker 分层为协同设计基点，以抖音私信和企业微信本地 Webhook 为双渠道输入，设置值班长、会话编排、渠道接入、意图风控、执行核验、案例学习六类 Agent，完成去重、分级、审批、HTTP 退款执行/核验/回滚、客户确认与案例沉淀；核心能力沉淀为 8 个可复用 Skill。
+以 AgentTeams Manager–Team Leader–Worker 为协同基点，接入抖音私信和企微本地 Webhook，设置 6 类 Agent，完成会话归一、去重、意图分级、方案生成、审批、退款执行/核验/回滚、客户确认和匿名案例沉淀，形成 8 个 Skill。
 
-【创新点】
-1. profile 隔离、防串号、短文本二次校验。
-2. Skill 与渠道解耦，新增渠道仅替换适配器。
-3. 审批闸门与执行证据可审计。
-
-【开放价值】
-Skill Schema、Identity 模板、MCP 契约可开源复用。
+【创新与开放】
+profile 隔离和幂等防串号；审批范围绑定高风险动作，核验通过后才通知；开放 Agent Identity、Skill Schema、工具契约和脱敏案例结构。
 
 【当前进展】
-抖音 Runtime（8765）可独立启动；企业动作模拟器（8770）提供订单查询、退款申请、执行回执和回滚；企微 Webhook（8771）转换为统一 SessionEvent；实时演示页（8780）跑通审批、HTTP 退款核验、通知和跨渠道去重。8 Skill 有 Schema，7 个可 CLI 验证。生产 RAG、官方运行时和 Task DB 为复赛项。
+抖音 Runtime、企业动作 HTTP 模拟器、企微 Webhook、实时演示页可独立运行；75 条测试通过。完整 RAG、官方 AgentTeams Runtime、真实 ERP/支付和生产 Task DB 规划于复赛。
