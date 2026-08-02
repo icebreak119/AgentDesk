@@ -10,6 +10,7 @@ from pathlib import Path
 import uvicorn
 
 from enterprise_simulator.app import create_app
+from enterprise_simulator.store import EnterpriseBusinessStore
 from orchestrator.models.business_action import HttpBusinessActionAdapter
 
 
@@ -119,3 +120,37 @@ def test_http_business_action_rejects_bad_order_and_idempotency_conflict(tmp_pat
     finally:
         server.should_exit = True
         thread.join(timeout=5)
+
+
+def test_enterprise_store_rebuilds_rolled_back_state_after_restart(tmp_path: Path):
+    evidence = tmp_path / "enterprise.jsonl"
+    payload = {
+        "task_id": "restart_task",
+        "profile_id": "d6a26b9e-demo",
+        "action_type": "refund",
+        "order_id": "order-demo-001",
+        "amount": "19.90",
+        "currency": "CNY",
+        "reason": "测试退款",
+        "idempotency_key": "restart_task:refund:1",
+        "approval_token": "approval",
+    }
+    first = EnterpriseBusinessStore(evidence)
+    requested = first.apply_refund(payload)
+    executed = first.execute_refund(
+        requested["operation_id"],
+        profile_id=payload["profile_id"],
+        idempotency_key=payload["idempotency_key"],
+        approval_token=payload["approval_token"],
+    )
+    rolled_back = first.rollback_refund(
+        executed["operation_id"],
+        profile_id=payload["profile_id"],
+        idempotency_key=payload["idempotency_key"],
+        approval_token=payload["approval_token"],
+    )
+    assert rolled_back["status"] == "rolled_back"
+
+    restarted = EnterpriseBusinessStore(evidence)
+    restored = restarted.get_operation(executed["operation_id"], payload["profile_id"])
+    assert restored["status"] == "rolled_back"

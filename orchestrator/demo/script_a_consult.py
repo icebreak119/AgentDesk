@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from orchestrator.agents.duty_manager import DutyManager
+from orchestrator.demo.artifacts import sidecar_path
 from orchestrator.agents.session_tl import SessionTL
 from orchestrator.models.trace import TraceWriter
 
@@ -16,7 +17,7 @@ DEFAULT_OUTPUT = REPO_ROOT / "orchestrator" / "output" / "trace.jsonl"
 
 def run(*, live: bool = False, output: Path = DEFAULT_OUTPUT, base_url: str = "http://127.0.0.1:8765"):
     duty_manager = DutyManager()
-    session_tl = SessionTL(knowledge_path=output.with_name("case_knowledge.jsonl"))
+    session_tl = SessionTL(knowledge_path=sidecar_path(output, "case_knowledge.jsonl"))
     mode = "live" if live else "mock"
 
     ctx = duty_manager.create_task(
@@ -49,7 +50,7 @@ def run(*, live: bool = False, output: Path = DEFAULT_OUTPUT, base_url: str = "h
             raise RuntimeError(f"剧本 A 结束于意外状态: {ctx.state}")
 
     print(f"trace written: {output}")
-    print(json.dumps(ctx.to_dict(), ensure_ascii=False, indent=2))
+    print(json.dumps(ctx.to_wire_dict(), ensure_ascii=False, indent=2))
     return ctx
 
 

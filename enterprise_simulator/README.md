@@ -16,4 +16,4 @@ python -m enterprise_simulator.server --port 8770
 - `GET /enterprise/operations/{operation_id}`：执行结果查询
 - `POST /enterprise/refunds/{operation_id}/rollback`：补偿回滚
 
-证据写入 JSONL 时仅保留操作 ID、订单号、金额、状态、幂等键和证据引用，不写客户姓名、会话原文或审批令牌。
+证据写入 JSONL 时仅保留操作 ID、订单号、金额、状态、幂等键和证据引用，不写客户姓名、会话原文或审批令牌；审计契约如需关联审批，只保存令牌哈希。

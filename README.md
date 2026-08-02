@@ -30,6 +30,8 @@ AgentDesk 是面向企业私域运营的多 Agent 客服自治工作台，以 **
 | [15_初赛提交表单内容.md](docs/15_初赛提交表单内容.md) | 初赛表单直接填写内容 |
 | [16_赛题核验清单.md](docs/16_赛题核验清单.md) | 赛题要求与可复现证据对照 |
 | [17_PPT视觉设计说明.md](docs/17_PPT视觉设计说明.md) | PDF 视觉参考与原创素材说明 |
+| [18_AgentTeams映射与接口契约.md](docs/18_AgentTeams映射与接口契约.md) | AgentTeams 角色、消息、状态和迁移边界 |
+| [19_量化评测报告.md](docs/19_量化评测报告.md) | 固定样本、四条高风险分支与延迟指标 |
 
 ## 重要说明
 
@@ -43,6 +45,7 @@ AgentDesk 是面向企业私域运营的多 Agent 客服自治工作台，以 **
 - ✅ 抖音 Channel Runtime 源码（`runtime/douyin/`，可独立启动 8765）
 - ✅ 6 Agent、8 Skill、剧本 A/B/C（含审批、HTTP 退款执行/核验/回滚、跨渠道去重和案例复用）
 - ✅ 本地企业微信 Webhook、独立企业业务 HTTP 模拟器、实时编排演示页
+- ✅ AgentTeams 映射契约、20 条样本评测、回滚失败人工升级分支、一键演示脚本
 - 🔄 企业微信生产验签/队列、AgentTeams 官方运行时、完整 RAG（复赛）
 
 ## Runtime 源码

@@ -32,6 +32,8 @@ class SessionTL:
         from_state: str,
         to_state: str,
     ) -> None:
+        if ctx.state != from_state:
+            raise RuntimeError(f"状态转移来源不一致: context={ctx.state}, from={from_state}")
         ctx.state = to_state
         trace.emit(
             ctx.task_id,
@@ -165,8 +167,7 @@ class SessionTL:
         publish_case: bool = True,
         emit_notification_event: bool = False,
     ) -> TaskContext:
-        start_state = "suspended" if ctx.state == "approved" else from_state
-        self._transition(ctx, trace, start_state, "acting")
+        self._transition(ctx, trace, ctx.state, "acting")
 
         send_receipt = act_verify.send(ctx, live=live or ctx.mode == "live", base_url=base_url)
         ctx.send_receipt = send_receipt
@@ -242,6 +243,7 @@ class SessionTL:
         live: bool = False,
         base_url: str = "http://127.0.0.1:8765",
         inject_verify_failure: bool = False,
+        inject_rollback_failure: bool = False,
         business_action_backend: str = "jsonl",
         enterprise_base_url: str = "http://127.0.0.1:8770",
     ) -> TaskContext:
@@ -358,6 +360,7 @@ class SessionTL:
                 path=self.business_action_path,
                 backend=business_action_backend,
                 enterprise_base_url=enterprise_base_url,
+                inject_failure=inject_rollback_failure,
             )
             ctx.business_action = rolled_back
             trace.emit(
@@ -375,6 +378,22 @@ class SessionTL:
                     "api": "/enterprise/refunds/{operation_id}/rollback",
                 },
             )
+            if rolled_back.get("status") != "rolled_back":
+                trace.emit(
+                    ctx.task_id,
+                    "DutyManager",
+                    event="business_action_rollback_failed",
+                    skill="BusinessAction",
+                    status="escalated",
+                    mode=business_action_backend,
+                    output={
+                        "operation_id": rolled_back.get("operation_id"),
+                        "rollback_of": rolled_back.get("rollback_of") or executed.get("operation_id"),
+                        "evidence_ref": rolled_back.get("evidence_ref"),
+                        "error_code": rolled_back.get("error_code"),
+                        "next_action": "human_review",
+                    },
+                )
             next_state = "failed" if rolled_back.get("status") == "rolled_back" else "escalated"
             self._transition(ctx, trace, "acting", next_state)
             return self.publish_case(ctx, trace)
@@ -404,6 +423,8 @@ class SessionTL:
         base_url: str = "http://127.0.0.1:8765",
         business_action_backend: str = "jsonl",
         enterprise_base_url: str = "http://127.0.0.1:8770",
+        inject_verify_failure: bool = False,
+        inject_rollback_failure: bool = False,
     ) -> TaskContext:
         if ctx.state not in {"suspended", "approved"}:
             raise RuntimeError(f"任务状态不可恢复: {ctx.state}")
@@ -422,8 +443,10 @@ class SessionTL:
                 trace,
                 live=live,
                 base_url=base_url,
-                inject_verify_failure=bool((ctx.raw_event or {}).get("inject_business_action_verify_failure")),
+                inject_verify_failure=inject_verify_failure
+                or bool((ctx.raw_event or {}).get("inject_business_action_verify_failure")),
                 business_action_backend=business_action_backend,
                 enterprise_base_url=enterprise_base_url,
+                inject_rollback_failure=inject_rollback_failure,
             )
         return self.execute_send_verify(ctx, trace, from_state="suspended", live=live, base_url=base_url)

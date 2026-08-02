@@ -97,9 +97,9 @@ def run(*, output: Path = DEFAULT_OUTPUT, knowledge_output: Path | None = None):
         )
 
     result = {
-        "primary": primary.to_dict(),
-        "duplicate": duplicate.to_dict(),
-        "follow_up": follow_up.to_dict(),
+        "primary": primary.to_wire_dict(),
+        "duplicate": duplicate.to_wire_dict(),
+        "follow_up": follow_up.to_wire_dict(),
         "knowledge_path": str(knowledge_path),
     }
     print(f"trace written: {output}")

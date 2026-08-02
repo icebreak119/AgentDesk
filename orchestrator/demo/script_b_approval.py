@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from orchestrator.agents.duty_manager import DutyManager
+from orchestrator.demo.artifacts import sidecar_path
 from orchestrator.agents.session_tl import SessionTL
 from orchestrator.models.trace import TraceWriter
 
@@ -23,14 +24,23 @@ def run(
     enterprise_url: str = "http://127.0.0.1:8770",
     reject: bool = False,
     inject_verify_failure: bool = False,
+    inject_rollback_failure: bool = False,
 ):
     duty_manager = DutyManager()
     session_tl = SessionTL(
-        knowledge_path=output.with_name("case_knowledge.jsonl"),
-        business_action_path=output.with_name("business_actions.jsonl"),
+        knowledge_path=sidecar_path(output, "case_knowledge.jsonl"),
+        business_action_path=sidecar_path(output, "business_actions.jsonl"),
     )
     mode = "live" if live else "mock"
-    scenario = "reject" if reject else "rollback" if inject_verify_failure else "success"
+    scenario = (
+        "reject"
+        if reject
+        else "rollback_failed"
+        if inject_rollback_failure
+        else "rollback"
+        if inject_verify_failure
+        else "success"
+    )
     task_id = "task_002" if scenario == "success" else f"task_002_{scenario}"
 
     ctx = duty_manager.create_task(
@@ -49,7 +59,8 @@ def run(
             "currency": "CNY",
             "refund_reason": "商品售后退款",
             "customer_feedback": "谢谢，已经收到处理进度。" if not live else "",
-            "inject_business_action_verify_failure": inject_verify_failure,
+            "inject_business_action_verify_failure": inject_verify_failure or inject_rollback_failure,
+            "inject_business_action_rollback_failure": inject_rollback_failure,
         },
         mode=mode,
     )
@@ -61,10 +72,16 @@ def run(
 
         if reject:
             duty_manager.reject(ctx)
+            trace.emit(
+                ctx.task_id,
+                "DutyManager",
+                event="state_transition",
+                **{"from": "suspended", "to": "failed"},
+            )
             trace.emit(ctx.task_id, "DutyManager", event="approval_rejected", status="failed")
             session_tl.publish_case(ctx, trace)
             print(f"trace written: {output}")
-            print(json.dumps(ctx.to_dict(), ensure_ascii=False, indent=2))
+            print(json.dumps(ctx.to_wire_dict(), ensure_ascii=False, indent=2))
             return ctx
 
         duty_manager.grant_approval(ctx, "appr_token_demo_001")
@@ -76,10 +93,12 @@ def run(
             base_url=base_url,
             business_action_backend=business_action_backend,
             enterprise_base_url=enterprise_url,
+            inject_verify_failure=inject_verify_failure or inject_rollback_failure,
+            inject_rollback_failure=inject_rollback_failure,
         )
 
     print(f"trace written: {output}")
-    print(json.dumps(ctx.to_dict(), ensure_ascii=False, indent=2))
+    print(json.dumps(ctx.to_wire_dict(), ensure_ascii=False, indent=2))
     return ctx
 
 
@@ -99,6 +118,11 @@ def main() -> int:
         action="store_true",
         help="模拟退款动作核验失败并触发补偿回滚",
     )
+    parser.add_argument(
+        "--inject-rollback-failure",
+        action="store_true",
+        help="模拟补偿回滚失败并升级人工",
+    )
     parser.add_argument("-o", "--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--base-url", default="http://127.0.0.1:8765")
     args = parser.parse_args()
@@ -110,9 +134,12 @@ def main() -> int:
         business_action_backend=args.business_action_backend,
         enterprise_url=args.enterprise_url,
         inject_verify_failure=args.inject_verify_failure,
+        inject_rollback_failure=args.inject_rollback_failure,
     )
     if args.reject:
         return 0 if ctx.state == "failed" else 1
+    if args.inject_rollback_failure:
+        return 0 if ctx.state == "escalated" else 1
     if args.inject_verify_failure:
         return 0 if ctx.state == "failed" else 1
     return 0 if ctx.state in {"done", "awaiting_customer_confirmation"} else 1

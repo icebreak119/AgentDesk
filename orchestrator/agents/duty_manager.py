@@ -35,8 +35,8 @@ class DutyManager:
         return bool(triage.get("need_approval"))
 
     def suspend_for_approval(self, ctx: TaskContext) -> None:
+        """Mark the approval requirement; Team Leader owns state transitions."""
         ctx.need_approval = True
-        ctx.state = "suspended"
 
     def grant_approval(self, ctx: TaskContext, token: str) -> None:
         if not str(token or "").strip():

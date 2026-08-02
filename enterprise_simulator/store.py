@@ -76,6 +76,11 @@ class EnterpriseBusinessStore:
                         "rollback_of",
                     )
                 }
+                if record.get("event") == "refund_rolled_back":
+                    original_id = str(record.get("rollback_of") or "")
+                    original = self.operations.get(original_id)
+                    if original is not None:
+                        original["status"] = "rolled_back"
 
     def _audit(self, record: dict[str, Any]) -> None:
         self.evidence_path.parent.mkdir(parents=True, exist_ok=True)

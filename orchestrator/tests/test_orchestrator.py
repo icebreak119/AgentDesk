@@ -45,6 +45,94 @@ def test_task_context_roundtrip():
     assert restored.knowledge_hits == []
 
 
+def test_agent_message_roundtrip_and_validation():
+    from orchestrator.models.agent_message import AgentMessage
+
+    message = AgentMessage(
+        message_id="msg_001",
+        task_id="task_001",
+        from_agent="agent.session_tl",
+        to_agent="agent.act_verify",
+        intent="execute_approved_refund",
+        context_ref="task://task_001",
+        payload={"skill": "BusinessAction"},
+        evidence_refs=("trace://task_001/requested",),
+        expected_state="acting",
+        risk_tag="high",
+    )
+    restored = AgentMessage.from_dict(message.to_dict())
+    assert restored == message
+    with pytest.raises(ValueError):
+        AgentMessage(
+            message_id="",
+            task_id="task_001",
+            from_agent="agent.session_tl",
+            to_agent="agent.act_verify",
+            intent="handoff",
+            context_ref="task://task_001",
+        )
+
+
+def test_agent_handoff_and_context_wire_payloads_redact_sensitive_data():
+    from orchestrator.models.agent_message import AgentMessage
+    from orchestrator.models.privacy import redact_for_transport
+    from orchestrator.models.task_context import TaskContext
+
+    ctx = TaskContext(
+        task_id="task_sensitive",
+        profile_id="profile_test",
+        session_id="session_test",
+        channel="douyin",
+        approval_token="secret-approval-token",
+        raw_event={"text": "我要退款", "sender_name": "客户甲", "order_id": "order-1"},
+    )
+    wire_context = ctx.to_wire_dict()
+    assert wire_context["approval_token"] == "[REDACTED]"
+    assert wire_context["raw_event"] == "[REDACTED]"
+    assert "secret-approval-token" not in ctx.to_wire_json()
+
+    message = AgentMessage(
+        message_id="msg_sensitive",
+        task_id="task_sensitive",
+        from_agent="agent.session_tl",
+        to_agent="agent.act_verify",
+        intent="execute_approved_refund",
+        context_ref="task://task_sensitive",
+        payload={"approval_token": "secret-approval-token", "text": "我要退款"},
+        expected_state="acting",
+        risk_tag="high",
+    )
+    wire_message = message.to_wire_dict()
+    assert wire_message["payload"] == {"approval_token": "[REDACTED]", "text": "[REDACTED]"}
+
+    redacted = redact_for_transport(
+        {
+            "customer_ref": "客户甲",
+            "draft_text": "客户甲您好，退款已完成",
+            "actual_content": "客户甲您好，退款已完成",
+        }
+    )
+    assert redacted == {
+        "customer_ref": "[REDACTED]",
+        "draft_text": "[REDACTED]",
+        "actual_content": "[REDACTED]",
+    }
+
+
+def test_trace_writer_redacts_sensitive_fields(tmp_path: Path):
+    from orchestrator.models.trace import TraceWriter
+
+    output = tmp_path / "trace.jsonl"
+    with TraceWriter(output) as trace:
+        trace.emit(
+            "task_sensitive",
+            "ActVerify",
+            output={"approval_token": "secret-token", "text": "客户原文"},
+        )
+    event = _read_trace(output)[0]
+    assert event["output"] == {"approval_token": "[REDACTED]", "text": "[REDACTED]"}
+
+
 def test_script_a_consult_trace(tmp_path: Path):
     output = tmp_path / "trace_a.jsonl"
     proc = _run_demo("orchestrator.demo.script_a_consult", output)
@@ -74,7 +162,7 @@ def test_script_b_approval_suspend_and_resume(tmp_path: Path):
     notification = next(e for e in events if e.get("event") == "customer_notification_sent")
     verified_index = next(i for i, e in enumerate(events) if e.get("event") == "business_action_verified")
     assert events.index(notification) > verified_index
-    action_records = [json.loads(line) for line in (tmp_path / "business_actions.jsonl").read_text(encoding="utf-8").splitlines()]
+    action_records = [json.loads(line) for line in (tmp_path / "trace_b.business_actions.jsonl").read_text(encoding="utf-8").splitlines()]
     assert action_records and action_records[0]["status"] == "executed"
     triage = next(e for e in events if e.get("skill") == "IntentTriage")
     assert triage.get("need_approval") is True
@@ -95,7 +183,7 @@ def test_script_b_reject(tmp_path: Path):
     events = _read_trace(output)
     assert any(e.get("event") == "approval_rejected" for e in events)
     assert any(e.get("skill") == "CaseDigest" for e in events)
-    assert not (tmp_path / "business_actions.jsonl").exists()
+    assert not (tmp_path / "trace_b_reject.business_actions.jsonl").exists()
 
 
 def test_script_b_business_action_verification_failure_rolls_back(tmp_path: Path):
@@ -122,8 +210,36 @@ def test_script_b_business_action_verification_failure_rolls_back(tmp_path: Path
     assert any(e.get("event") == "business_action_rollback_verified" and e.get("status") == "rolled_back" for e in events)
     assert not any(e.get("event") == "customer_notification_sent" for e in events)
     assert any(e.get("event") == "state_transition" and e.get("to") == "failed" for e in events)
-    action_records = [json.loads(line) for line in (tmp_path / "business_actions.jsonl").read_text(encoding="utf-8").splitlines()]
+    action_records = [json.loads(line) for line in (tmp_path / "trace_b_rollback.business_actions.jsonl").read_text(encoding="utf-8").splitlines()]
     assert [record["status"] for record in action_records] == ["executed", "rolled_back"]
+
+
+def test_script_b_rollback_failure_escalates_to_human(tmp_path: Path):
+    output = tmp_path / "trace_b_rollback_failed.jsonl"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "orchestrator.demo.script_b_approval",
+            "--inject-rollback-failure",
+            "-o",
+            str(output),
+        ],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    events = _read_trace(output)
+    assert any(e.get("event") == "business_action_verified" and e.get("status") == "failed" for e in events)
+    rollback = next(e for e in events if e.get("event") == "business_action_rollback_failed")
+    assert rollback["status"] == "escalated"
+    assert rollback["output"]["next_action"] == "human_review"
+    assert any(e.get("event") == "state_transition" and e.get("to") == "escalated" for e in events)
+    assert not any(e.get("event") == "customer_notification_sent" for e in events)
 
 
 def test_business_action_is_idempotent_and_conflict_safe(tmp_path: Path):

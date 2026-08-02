@@ -139,6 +139,8 @@
 
 ## 5. 与现有工程映射（真实性支撑）
 
+完整的消息信封、状态流转、官方 Runtime 替换边界和不可破坏安全不变量见 [`18_AgentTeams映射与接口契约.md`](18_AgentTeams映射与接口契约.md)。
+
 | AgentDesk 角色 | 现有工程能力 |
 |---|---|
 | ChannelIngress | 抖音入站监听与消息归一；企微仅按统一 SessionEvent 契约作离线演示 |

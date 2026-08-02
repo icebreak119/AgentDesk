@@ -19,7 +19,7 @@ from orchestrator.agents.duty_manager import DutyManager
 from orchestrator.agents.session_tl import SessionTL
 from orchestrator.models.conversation_ledger import ConversationLedger
 from orchestrator.models.session_event import normalize_session_event
-from orchestrator.models.trace import TraceWriter
+from orchestrator.models.trace import TraceWriter, input_hash
 
 _TZ = timezone(timedelta(hours=8))
 
@@ -47,14 +47,16 @@ def _http_json(method: str, url: str, payload: dict[str, Any] | None = None) -> 
 
 
 class DemoRun:
-    def __init__(self, run_id: str, trace_path: Path) -> None:
+    def __init__(self, run_id: str, trace_path: Path, scenario: str) -> None:
         self.run_id = run_id
         self.trace_path = trace_path
+        self.scenario = scenario
         self.events: list[dict[str, Any]] = []
         self.status = "starting"
         self.error = ""
         self.started_at = _now()
         self.finished_at = ""
+        self.final_state = ""
         self._lock = threading.RLock()
 
     def emit(self, kind: str, title: str, body: str, **fields: Any) -> None:
@@ -78,6 +80,8 @@ class DemoRun:
                 "started_at": self.started_at,
                 "finished_at": self.finished_at,
                 "trace_path": str(self.trace_path),
+                "scenario": self.scenario,
+                "final_state": self.final_state,
                 "events": list(self.events),
             }
 
@@ -107,6 +111,7 @@ def _run_workflow(
     wecom_url: str,
     gateway_url: str,
     repo_root: Path,
+    scenario: str,
 ) -> None:
     try:
         output_dir = repo_root / "tmp" / f"live_demo_{demo.run_id}"
@@ -120,6 +125,8 @@ def _run_workflow(
             knowledge_path=knowledge_path,
             business_action_path=action_path,
         )
+        inject_verify_failure = scenario in {"verify_failure", "rollback_failure"}
+        inject_rollback_failure = scenario == "rollback_failure"
         shared_ts = "2026-08-02T09:05:00+08:00"
         douyin_payload = {
             "conversation_id": "dy-demo-conversation-001",
@@ -138,14 +145,14 @@ def _run_workflow(
         demo.emit(
             "system",
             "LIVE RUN STARTED",
-            "演示运行在本机隔离目录中，退款动作将调用 HTTP 企业业务模拟器。",
+            f"场景={scenario} · 演示运行在本机隔离目录中，退款动作将调用 HTTP 企业业务模拟器。",
             step="start",
             backend="HTTP / 8770",
         )
         demo.emit(
             "inbound",
             "抖音 Runtime · inbound callback",
-            "我要退款，改一下账户",
+            "高风险退款请求进入统一会话契约。",
             step="inbound",
             channel="douyin",
             contract="POST /webhooks/douyin/messages",
@@ -159,10 +166,10 @@ def _run_workflow(
         demo.emit(
             "channel",
             "抖音 → SessionEvent",
-            f"channel={normalized_douyin.get('channel')} · dedupe_key={normalized_douyin.get('dedupe_key')}",
+            f"channel={normalized_douyin.get('channel')} · dedupe_key={normalized_douyin.get('dedupe_key')} · content_hash={input_hash(normalized_douyin.get('content', ''))}",
             step="inbound",
             channel="douyin",
-            session_event=normalized_douyin,
+            privacy="content omitted from live telemetry",
         )
         ctx = duty_manager.create_task(
             task_id=f"live_{demo.run_id}",
@@ -203,6 +210,8 @@ def _run_workflow(
                 duty_manager,
                 business_action_backend="http",
                 enterprise_base_url=enterprise_url,
+                inject_verify_failure=inject_verify_failure,
+                inject_rollback_failure=inject_rollback_failure,
             )
 
             demo.emit(
@@ -230,7 +239,7 @@ def _run_workflow(
                 f"channel={normalized.get('channel')} · dedupe_key={normalized.get('dedupe_key')}",
                 step="channel",
                 channel="wecom",
-                session_event=normalized,
+                privacy="content omitted from live telemetry",
             )
             wecom_ctx = duty_manager.create_task(
                 task_id=f"live_{demo.run_id}_wecom",
@@ -248,6 +257,15 @@ def _run_workflow(
                 status=wecom_ctx.state,
             )
 
+        demo.final_state = ctx.state
+        if ctx.state == "escalated":
+            demo.emit(
+                "approval",
+                "补偿回滚失败 · escalated",
+                "退款操作未核验成功且补偿回滚失败，已进入人工复核，不发送客户成功通知。",
+                step="approval",
+                status="human_review",
+            )
         demo.emit(
             "complete",
             "TRACE COMPLETE",
@@ -281,6 +299,7 @@ HTML = r"""<!doctype html>
     h1 { margin:8px 0 4px; font-size:28px; letter-spacing:0; }
     .subtitle { color:var(--muted); margin:0; }
     .actions { display:flex; gap:10px; align-items:center; }
+    select { border:1px solid #2f6b70; background:#0e262d; color:#dffcfb; border-radius:6px; padding:10px 12px; font-weight:700; }
     button { border:1px solid #2f6b70; background:#12363b; color:#dffcfb; border-radius:6px; padding:10px 16px; font-weight:700; cursor:pointer; }
     button:disabled { opacity:.45; cursor:default; }
     .status { border:1px solid var(--line); border-radius:5px; padding:9px 12px; color:var(--muted); font:12px ui-monospace,SFMono-Regular,Consolas,monospace; }
@@ -319,7 +338,7 @@ HTML = r"""<!doctype html>
   <main class="shell">
     <header>
       <div><div class="eyebrow">AGENTDESK / LIVE ORCHESTRATION</div><h1>高风险客服动作闭环</h1><p class="subtitle">抖音 + 企业微信 · Agent delegation · HTTP enterprise evidence</p></div>
-      <div class="actions"><div id="runStatus" class="status">READY · 等待演示</div><button id="runButton">启动实时演示</button></div>
+      <div class="actions"><div id="runStatus" class="status">READY · 等待演示</div><select id="scenarioSelect" aria-label="演示场景"><option value="success">成功闭环</option><option value="verify_failure">核验失败并回滚</option><option value="rollback_failure">回滚失败升级人工</option></select><button id="runButton">启动实时演示</button></div>
     </header>
     <section class="flow" id="flow"></section>
     <section class="layout">
@@ -338,8 +357,8 @@ HTML = r"""<!doctype html>
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     function renderEvent(e) { const div=document.createElement('div'); div.className=`event ${esc(e.kind)}`; div.innerHTML=`<time>${esc(e.time)}</time><div class="dot"></div><div><h3>${esc(e.title)}</h3><p>${esc(e.body)}</p></div>`; timeline.appendChild(div); timeline.scrollTop=timeline.scrollHeight; }
     function activate(step) { document.querySelectorAll('.step').forEach(x=>x.classList.toggle('active', x.dataset.step===step)); }
-    async function poll() { if(!runId) return; const data=await (await fetch(`/api/demo/state/${runId}`)).json(); const events=data.events||[]; if(rendered===0) timeline.innerHTML=''; events.slice(rendered).forEach(renderEvent); rendered=events.length; document.getElementById('eventCount').textContent=`${rendered} events`; const last=events[events.length-1]; if(last) { activate(last.step); if(last.trace_path) document.getElementById('traceMetric').textContent=last.trace_path.split(/[\\/]/).pop(); } status.textContent=`${data.status.toUpperCase()} · ${data.finished_at||data.started_at}`; if(data.status==='completed'||data.status==='failed'){ clearInterval(polling); document.getElementById('runButton').disabled=false; document.getElementById('evidenceMetric').textContent=data.status==='completed'?'verified':'inspect'; } }
-    document.getElementById('runButton').onclick=async()=>{ document.getElementById('runButton').disabled=true; rendered=0; const res=await (await fetch('/api/demo/run',{method:'POST'})).json(); runId=res.run_id; document.getElementById('runId').textContent=`run=${runId}`; status.textContent='RUNNING · starting'; polling=setInterval(poll,250); poll(); };
+    async function poll() { if(!runId) return; const data=await (await fetch(`/api/demo/state/${runId}`)).json(); const events=data.events||[]; if(rendered===0) timeline.innerHTML=''; events.slice(rendered).forEach(renderEvent); rendered=events.length; document.getElementById('eventCount').textContent=`${rendered} events`; const last=events[events.length-1]; if(last) { activate(last.step); if(last.trace_path) document.getElementById('traceMetric').textContent=last.trace_path.split(/[\\/]/).pop(); } status.textContent=`${data.status.toUpperCase()} · ${data.final_state||data.finished_at||data.started_at}`; if(data.status==='completed'||data.status==='failed'){ clearInterval(polling); document.getElementById('runButton').disabled=false; document.getElementById('scenarioSelect').disabled=false; document.getElementById('evidenceMetric').textContent=data.final_state||'inspect'; } }
+    document.getElementById('runButton').onclick=async()=>{ document.getElementById('runButton').disabled=true; document.getElementById('scenarioSelect').disabled=true; rendered=0; const scenario=document.getElementById('scenarioSelect').value; const res=await (await fetch('/api/demo/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scenario})})).json(); runId=res.run_id; document.getElementById('runId').textContent=`run=${runId} · ${scenario}`; status.textContent='RUNNING · starting'; polling=setInterval(poll,250); poll(); };
   </script>
 </body>
 </html>"""
@@ -385,13 +404,20 @@ def create_app(
         }
 
     @app.post("/api/demo/run")
-    def start_run() -> dict[str, Any]:
+    async def start_run(request: Request) -> dict[str, Any]:
         active = next((run for run in app.state.runs.values() if run.status in {"starting", "running"}), None)
         if active:
             return {"ok": True, "run_id": active.run_id, "status": active.status}
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        scenario = str(payload.get("scenario") or "success") if isinstance(payload, dict) else "success"
+        if scenario not in {"success", "verify_failure", "rollback_failure"}:
+            raise HTTPException(status_code=400, detail="unsupported_demo_scenario")
         run_id = uuid.uuid4().hex[:8]
         trace_path = root / "tmp" / f"live_demo_{run_id}" / "trace.jsonl"
-        run = DemoRun(run_id, trace_path)
+        run = DemoRun(run_id, trace_path, scenario)
         run.status = "running"
         app.state.runs[run_id] = run
         thread = threading.Thread(
@@ -402,6 +428,7 @@ def create_app(
                 "wecom_url": wecom_url,
                 "gateway_url": gateway_url,
                 "repo_root": root,
+                "scenario": scenario,
             },
             name=f"agentdesk-live-demo-{run_id}",
             daemon=True,

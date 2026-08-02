@@ -8,6 +8,8 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Callable, TextIO
 
+from orchestrator.models.privacy import redact_for_transport
+
 
 def _now_iso() -> str:
     tz = timezone(timedelta(hours=8))
@@ -46,7 +48,7 @@ class TraceWriter:
             "agent": agent,
             "ts": _now_iso(),
         }
-        event.update({k: v for k, v in fields.items() if v is not None})
+        event.update(redact_for_transport({k: v for k, v in fields.items() if v is not None}))
         line = json.dumps(event, ensure_ascii=False)
         if self._fh is None:
             raise RuntimeError("TraceWriter 未打开，请使用 with 语句")

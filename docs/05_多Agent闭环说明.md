@@ -128,7 +128,7 @@ TaskContext 示例：
 
 | 能力 | 状态 | 说明 |
 |---|---|---|
-| 共享状态管理 | ✅ 参考实现可运行 | `TaskContext` + 会话状态机；pytest 覆盖 JSON 往返 |
+| 共享状态管理 | ✅ 参考实现可运行 | `TaskContext` + 会话状态机；状态转移来源校验；跨 Agent 使用脱敏 `to_wire_dict()` |
 | 轨迹可观测 | ✅ 参考实现可运行 | `trace.jsonl` 按 `task_id / agent / skill / status` 串联 |
 | 结构化案例归档与标签检索 | ✅ 参考实现可运行 | 匿名 JSONL CaseDigest + `case://` 引用；剧本 C 覆盖 |
 | 知识库 RAG | 🔄 复赛 | FAQ + 历史案例检索 |

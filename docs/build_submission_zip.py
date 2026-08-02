@@ -35,6 +35,8 @@ DOC_FILES = [
     "15_初赛提交表单内容.md",
     "16_赛题核验清单.md",
     "17_PPT视觉设计说明.md",
+    "18_AgentTeams映射与接口契约.md",
+    "19_量化评测报告.md",
     "build_arch_diagram.py",
     "build_ppt_assets.py",
     "build_ppt_pdf.py",
@@ -65,6 +67,8 @@ EXTRA_DIRS = [
     REPO_ROOT / "demo_runtime",
     RUNTIME,
     REPO_ROOT / "runtime" / "wecom",
+    REPO_ROOT / "evaluation",
+    REPO_ROOT / "scripts",
 ]
 
 

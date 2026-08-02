@@ -12,6 +12,8 @@
 3. **Skill 可调用**：8 个 Skill 均有 Schema，其中 7 个可经 CLI 演示。
 4. **工程可信**：profile 隔离、审批闸门、独立 HTTP 企业动作、企微 Webhook、匿名 CaseDigest。
 
+实时演示页的场景选择器支持三条路径：成功闭环、核验失败并回滚、回滚失败升级人工。
+
 ## 2. 环境说明
 
 | 项 | 说明 |
@@ -120,6 +122,7 @@ python -m orchestrator.demo.script_b_approval
 4. `business_action_verified` 成功后才 ChannelSend 客户通知；Trace 中标注 `mode=http`
 5. 拒绝路径：`python -m orchestrator.demo.script_b_approval --reject`
 6. 核验失败回滚路径：`python -m orchestrator.demo.script_b_approval --inject-verify-failure`
+7. 回滚失败升级人工：`python -m orchestrator.demo.script_b_approval --inject-rollback-failure`
 
 ## 7. 剧本 C：跨渠道去重、客户确认与案例复用
 
@@ -145,6 +148,7 @@ python skills/run_skill.py reply_plan -i skills/reply_plan/v0.1/examples/high_ri
 python skills/run_skill.py customer_confirm -i skills/customer_confirm/v0.1/examples/confirmed.json --pretty
 python skills/run_skill.py case_digest -i skills/case_digest/v0.1/examples/confirmed_consult.json --pretty
 python skills/run_skill.py business_action -i skills/business_action/v0.1/examples/refund.json --pretty
+python evaluation/run_evaluation.py
 ```
 
 强调：`registry.yaml` 八 Skill 索引；高风险 ReplyPlan **不附带 approval_token**；BusinessAction 只在审批后执行；CaseDigest 输出不含客户身份、原文或凭据。

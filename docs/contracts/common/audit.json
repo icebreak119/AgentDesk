@@ -20,7 +20,7 @@
     "trace_id": "string，分布式追踪 ID",
     "duration_ms": "integer，耗时毫秒",
     "evidence_ref": "string，核验证据引用，如 log://verify/001",
-    "approval_token": "string，高风险放行令牌",
+    "approval_token_hash": "string，高风险放行令牌哈希；原令牌只在内存和受控工具请求中短暂存在，不得写入审计",
     "metadata": "object，扩展信息（不含客户明文隐私）"
   },
   "样例": [

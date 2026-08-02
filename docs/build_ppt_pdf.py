@@ -184,7 +184,7 @@ def footer(c: canvas.Canvas, page_no: int, dark: bool = False) -> None:
     c.setFillColor(color)
     c.setFont(MONO, 8.2)
     c.drawString(48, 23, "AGENTDESK / AGENT INFRA / PRELIMINARY")
-    c.drawRightString(PAGE_W - 48, 23, f"{page_no:02d} / 12")
+    c.drawRightString(PAGE_W - 48, 23, f"{page_no:02d} / 14")
 
 
 def light_header(c: canvas.Canvas, page_no: int, section: str, title: str, subtitle: str = "") -> None:
@@ -309,7 +309,7 @@ def cover(c: canvas.Canvas) -> None:
     line(c, 48, 130, PAGE_W - 48, 130, INK_LINE, 0.9)
     metric(c, 48, 87, "06", "Agent Identity", MINT, dark=True)
     metric(c, 169, 87, "07", "可复用 Skill", GOLD, dark=True)
-    metric(c, 300, 87, "56", "pytest 断言", CORAL, dark=True)
+    metric(c, 300, 87, "72", "pytest 断言", CORAL, dark=True)
     c.setFillColor(colors.HexColor("#9CAAAA"))
     c.setFont(MONO, 8.5)
     c.drawRightString(PAGE_W - 48, 92, "DOUYIN RUNTIME / REFERENCE ORCHESTRATOR / TRACE")
@@ -688,7 +688,7 @@ def verification(c: canvas.Canvas) -> None:
     light_header(c, 11, "10 / Local Verification", "评审要看的，不是演示话术。", "可复现命令、剧本 Trace、Skill CLI 输出和契约测试共同构成初赛阶段的工程证据。")
     c.setFillColor(CORAL)
     c.setFont(FONT_BOLD, 78)
-    c.drawString(48, 252, "56")
+    c.drawString(48, 252, "72")
     c.setFillColor(INK)
     c.setFont(FONT_BOLD, 20)
     c.drawString(48, 213, "tests passed")
@@ -706,7 +706,9 @@ def verification(c: canvas.Canvas) -> None:
         "python -m orchestrator.demo.script_b_approval",
         "python -m orchestrator.demo.script_b_approval --reject",
         "python -m orchestrator.demo.script_b_approval --inject-verify-failure",
+        "python -m orchestrator.demo.script_b_approval --inject-rollback-failure",
         "python -m orchestrator.demo.script_c_multichannel_case",
+        "python evaluation/run_evaluation.py",
         "python skills/run_skill.py intent_triage -i ... --pretty",
     )
     for index, command in enumerate(commands):
@@ -757,6 +759,70 @@ def open_plan(c: canvas.Canvas) -> None:
     c.drawCentredString(PAGE_W / 2, 57, "https://github.com/icebreak119/AgentDesk")
 
 
+def agentteams_contract(c: canvas.Canvas) -> None:
+    light_header(c, 13, "12 / AgentTeams Contract", "把映射变成可替换接口。", "初赛参考编排器先验证角色、消息和不变量；复赛只替换运行时调度适配层。")
+    columns = (
+        (48, MINT, "MANAGER", "DutyManager", "create_task\nsuspend / approve / reject\nhuman escalation"),
+        (301, CYAN, "TEAM LEADER", "SessionTL", "run_until_gate\nresume_after_approval\npublish_case"),
+        (554, CORAL, "WORKER", "ActVerify", "BusinessAction\nOutcomeVerify\nrollback / notify"),
+    )
+    for x, accent, label, name, body in columns:
+        rounded(c, x, 205, 220, 142, fill=INK_SOFT, stroke=accent, radius=10, line_width=1)
+        c.setFillColor(accent)
+        c.setFont(MONO, 8.4)
+        c.drawString(x + 18, 322, label)
+        c.setFillColor(INK)
+        c.setFont(FONT_BOLD, 17)
+        c.drawString(x + 18, 294, name)
+        c.setFillColor(MUTED)
+        c.setFont(MONO, 9.2)
+        for index, line_text in enumerate(body.split("\n")):
+            c.drawString(x + 18, 264 - index * 17, line_text)
+    arrow(c, 268, 276, 301, 276, INK, 1.5)
+    arrow(c, 521, 276, 554, 276, INK, 1.5)
+
+    rounded(c, 48, 87, 746, 82, fill=INK, radius=9)
+    c.setFillColor(MINT)
+    c.setFont(MONO, 8.2)
+    c.drawString(68, 146, "MESSAGE ENVELOPE")
+    c.setFillColor(WARM_WHITE)
+    c.setFont(MONO, 9.4)
+    c.drawString(68, 125, "task_id · from_agent · to_agent · context_ref · skill · evidence_refs · expected_state")
+    c.setFillColor(colors.HexColor("#B6C7C5"))
+    c.setFont(FONT, 9.4)
+    c.drawString(68, 104, "审批令牌不进 Trace；BusinessAction 核验通过后才允许通知；回滚失败进入 human_review。")
+    paragraph(c, "CONTRACT: docs/18_AgentTeams.md  |  REPORT: docs/19_evaluation.md", 48, 61, 746, text_style("contract-ref", 9.7, 13, MUTED, TA_CENTER, MONO))
+
+
+def evaluation_scorecard(c: canvas.Canvas) -> None:
+    dark_header(c, 14, "13 / Evaluation", "把行为不变量变成数字。", "固定脱敏样本验证意图、去重和四条高风险分支；延迟指标仅代表本地参考编排器。")
+    metrics = (
+        (48, MINT, "20 / 20", "意图与风险样本", "规则化 Skill 样本全通过"),
+        (301, CYAN, "3 / 3", "跨渠道去重断言", "首条接收、重复拦截、独立内容"),
+        (554, CORAL, "4 / 4", "高风险安全分支", "成功 / 拒绝 / 回滚 / 人工升级"),
+    )
+    for x, accent, value, heading, body in metrics:
+        rounded(c, x, 215, 220, 145, fill=INK_SOFT, stroke=accent, radius=10, line_width=1)
+        c.setFillColor(accent)
+        c.setFont(FONT_BOLD, 30)
+        c.drawString(x + 18, 300, value)
+        c.setFillColor(WARM_WHITE)
+        c.setFont(FONT_BOLD, 13)
+        c.drawString(x + 18, 268, heading)
+        paragraph(c, body, x + 18, 252, 184, text_style("metric-body", 9.5, 14, colors.HexColor("#B6C7C5"), TA_LEFT, FONT))
+    rounded(c, 48, 100, 746, 75, fill=INK, radius=9)
+    c.setFillColor(MINT)
+    c.setFont(MONO, 8.4)
+    c.drawString(68, 151, "LOCAL PERFORMANCE")
+    c.setFillColor(WARM_WHITE)
+    c.setFont(FONT_BOLD, 18)
+    c.drawString(68, 126, "P95 271.69 ms")
+    c.setFillColor(colors.HexColor("#B6C7C5"))
+    c.setFont(FONT, 10)
+    c.drawString(210, 129, "12 次成功剧本运行 · JSONL Mock · 不代表生产 ERP / 支付 / 渠道延迟")
+    paragraph(c, "REPORT: docs/19_evaluation.md  |  RUN: python evaluation/run_evaluation.py", 48, 73, 746, text_style("scorecard-ref", 10.2, 14, colors.HexColor("#B6C7C5"), TA_CENTER, MONO))
+
+
 SLIDES = (
     cover,
     scene_problem,
@@ -770,6 +836,8 @@ SLIDES = (
     security_evidence,
     verification,
     open_plan,
+    agentteams_contract,
+    evaluation_scorecard,
 )
 
 

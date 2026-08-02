@@ -19,3 +19,5 @@ tmp/
 
 # Demo entrypoints write these files beside the selected Trace output
 orchestrator/output/business_actions.jsonl
+orchestrator/output/enterprise_business_evidence.jsonl
+orchestrator/output/wecom_webhook_evidence.jsonl

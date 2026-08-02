@@ -140,15 +140,21 @@ def business_action_request(ctx: TaskContext) -> dict[str, Any]:
     }
 
 
-def _failed_business_action(ctx: TaskContext, error: Exception | str) -> dict[str, Any]:
+def _failed_business_action(
+    ctx: TaskContext,
+    error: Exception | str,
+    *,
+    operation_id: str = "",
+    rollback_of: str = "",
+) -> dict[str, Any]:
     return {
-        "operation_id": "",
+        "operation_id": operation_id,
         "action_type": str((ctx.triage_result or {}).get("requested_action") or "refund"),
         "status": "failed",
         "idempotency_key": f"{ctx.task_id}:business_action:1",
         "evidence_ref": f"action://failed/{ctx.task_id}",
         "error_code": error if isinstance(error, str) else type(error).__name__,
-        "rollback_of": "",
+        "rollback_of": rollback_of,
     }
 
 
@@ -235,7 +241,15 @@ def rollback_business_action(
     path: Path = DEFAULT_BUSINESS_ACTION_PATH,
     backend: str = "jsonl",
     enterprise_base_url: str = "http://127.0.0.1:8770",
+    inject_failure: bool = False,
 ) -> dict[str, Any]:
+    if inject_failure:
+        return _failed_business_action(
+            ctx,
+            "rollback_failed",
+            operation_id="",
+            rollback_of=str(receipt.get("operation_id") or ""),
+        )
     try:
         adapter = _business_adapter(
             backend=backend,
