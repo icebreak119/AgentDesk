@@ -89,7 +89,7 @@ def build() -> None:
     ax.text(
         8,
         8.26,
-        "初赛可验证: 抖音 Runtime + 参考编排器 + 7 Skill + Trace + 匿名 CaseDigest | 企微: 统一契约 / 离线剧本 | 复赛: 官方 AgentTeams、完整 RAG、Trace UI",
+        "初赛可验证: 抖音 Runtime + 企微 Webhook + 参考编排器 + 8 Skill + HTTP 企业动作 + Trace | 复赛: ERP/支付 Adapter、官方 AgentTeams、完整 RAG、Trace UI",
         ha="center",
         va="center",
         fontsize=9.5,
@@ -98,7 +98,7 @@ def build() -> None:
 
     band(ax, 7.32, "任务输入", color=SKY)
     rounded_box(ax, 2.05, 7.20, 4.35, 0.74, "抖音私信\n入站消息 -> SessionEvent\n初赛已接入", face="#EFF7FB", edge=BLUE, size=9.2, weight="bold")
-    rounded_box(ax, 7.05, 7.20, 3.60, 0.74, "企业微信\n统一契约 / 离线剧本\n非真实渠道接入", face="#F3F6F8", edge="#B9C5CC", size=8.8, color=MUTED)
+    rounded_box(ax, 7.05, 7.20, 3.60, 0.74, "企业微信\n本地 Webhook / SessionEvent\n生产验签属于复赛", face="#F3F6F8", edge="#B9C5CC", size=8.8, color=MUTED)
     rounded_box(ax, 11.30, 7.20, 2.95, 0.74, "跨渠道去重键\n匿名客户 + 归一内容\n5 分钟窗口", face="#F8FBFA", edge="#C9D8D5", size=8.2, color=MUTED)
 
     band(ax, 6.18, "Manager", color=MINT)
@@ -115,7 +115,7 @@ def build() -> None:
     band(ax, 3.62, "Workers", color="#E8F4F4")
     worker_y = 3.72
     workers = (
-        (1.30, "ChannelIngress\n归一、跨渠道去重", "#F0FAF9", TEAL),
+        (1.70, "ChannelIngress\n归一、跨渠道去重", "#F0FAF9", TEAL),
         (4.55, "TriageGuard\n意图分级、方案", "#FFF9E9", YELLOW),
         (7.80, "ActVerify\n执行、核验、客户确认", "#FFF4EF", CORAL),
         (11.05, "CaseLearning\n标签检索、匿名沉淀", "#EEF5FB", BLUE),
@@ -127,35 +127,39 @@ def build() -> None:
 
     band(ax, 2.42, "Skill", color="#F9F3DF")
     skill_y = 2.50
-    skill_x = [0.95, 3.00, 5.05, 7.10, 9.15, 11.20, 13.25]
+    skill_x = [1.40, 3.20, 5.00, 6.80, 8.60, 10.40, 12.20, 14.00]
     skill_names = [
         "Session\nNormalize",
         "Intent\nTriage",
         "Reply\nPlan",
+        "Business\nAction",
         "Channel\nSend",
         "Outcome\nVerify",
         "Customer\nConfirm",
         "Case\nDigest",
     ]
     for x, name in zip(skill_x, skill_names):
-        rounded_box(ax, x, skill_y, 1.82, 0.62, name, face="#FFF9E9", edge=YELLOW, size=7.8, weight="bold")
+        rounded_box(ax, x, skill_y, 1.60, 0.62, name, face="#FFF9E9", edge=YELLOW, size=7.2, weight="bold")
     for start_x, end_x in (
-        (2.63, 1.86),
-        (5.88, 3.91),
-        (5.88, 5.96),
-        (9.13, 8.01),
-        (9.13, 10.06),
-        (9.13, 12.11),
-        (12.38, 14.16),
+        (2.83, 2.20),
+        (5.88, 4.00),
+        (5.88, 5.80),
+        (9.13, 7.60),
+        (9.13, 9.40),
+        (9.13, 11.20),
+        (12.38, 13.00),
+        (12.38, 14.80),
     ):
         arrow(ax, (start_x, 3.72), (end_x, 3.12))
 
     band(ax, 1.26, "工具 / 契约", color=PEACH)
     rounded_box(ax, 1.25, 1.30, 3.05, 0.62, "抖音 Channel Runtime\nHTTP 8765 / Web Console", face="#FFF4EF", edge=CORAL, size=9.0, weight="bold")
-    rounded_box(ax, 5.15, 1.30, 3.20, 0.62, "MCP 等价契约\nSchema | 幂等 | 审计 | 错误码", face="#FFF4EF", edge=CORAL, size=8.8, weight="bold")
-    rounded_box(ax, 10.20, 1.30, 4.10, 0.62, "企业微信统一契约 / 离线剧本\n渠道 Adapter 待真实接入", face="#F5F7F8", edge="#B9C5CC", size=8.5, color=MUTED)
+    rounded_box(ax, 4.45, 1.30, 3.10, 0.62, "BusinessAction\nHTTP 8770 企业动作模拟器", face="#FFF4EF", edge=CORAL, size=8.7, weight="bold")
+    rounded_box(ax, 7.95, 1.30, 3.15, 0.62, "MCP 等价契约\nSchema | 幂等 | 审计 | 错误码", face="#FFF4EF", edge=CORAL, size=8.5, weight="bold")
+    rounded_box(ax, 11.55, 1.30, 3.75, 0.62, "企微 Webhook 8771 / 实时 Demo 8780\nERP / 支付 Adapter 属于复赛", face="#F5F7F8", edge="#B9C5CC", size=8.1, color=MUTED)
     arrow(ax, (8.01, 2.50), (2.78, 1.92))
-    arrow(ax, (8.01, 2.50), (6.75, 1.92))
+    arrow(ax, (8.01, 2.50), (6.00, 1.92))
+    arrow(ax, (8.01, 2.50), (9.50, 1.92))
 
     band(ax, 0.28, "证据 / 安全", color="#E8ECEB")
     rounded_box(ax, 1.10, 0.31, 2.90, 0.56, "trace.jsonl\ntask / agent / skill / status", face="#F7FAF9", edge="#AFC4BF", size=8.2, weight="bold")

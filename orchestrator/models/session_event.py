@@ -76,4 +76,5 @@ def normalize_session_event(channel: str, profile_id: str, raw_event: dict[str, 
         "ts": ts,
         "dedupe_key": hashlib.sha256(dedupe_src.encode("utf-8")).hexdigest()[:24],
         "dedupe_window": _time_window(ts),
+        "requested_action": "refund" if "退款" in content else "",
     }

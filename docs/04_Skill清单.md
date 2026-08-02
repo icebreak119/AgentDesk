@@ -14,6 +14,7 @@
 | OutcomeVerify | v0.1 | 结果核验与证据 | ActVerify | `skills/outcome_verify/v0.1/` + runtime | 可审计证据输出 |
 | CustomerConfirm | v0.1 | 客户反馈确认与升级判定 | ActVerify | `skills/customer_confirm/v0.1/` ✅ 可运行 | 处置闭环不止于发送 |
 | CaseDigest | v0.1 | 脱敏案例归档与标签复用 | CaseLearning | `skills/case_digest/v0.1/` ✅ 可运行 | 结构化经验沉淀 |
+| BusinessAction | v0.1 | 高风险退款动作请求校验与企业系统调用 | ActVerify | `skills/business_action/v0.1/` + `HttpBusinessActionAdapter` | 订单查询、审批、幂等、核验、补偿回滚 |
 
 ---
 
@@ -123,6 +124,21 @@
 | 安全边界 | `contains_customer_identity/content/credential` 必须均为 false |
 | 复用价值 | 以意图/风险/处置标签复用经验；当前为结构化标签检索，非完整 RAG |
 | 与多 Agent 关系 | CaseLearning 调用，`knowledge_hits` 传给 TriageGuard 的 ReplyPlan |
+
+## 8. BusinessActionSkill
+
+| 项 | 内容 |
+|---|---|
+| 用途 | 在审批通过后调用企业退款动作，并输出可核验的操作证据 |
+| 输入 Schema | `{ task_id, profile_id, action_type, order_id, amount, currency, reason, idempotency_key, approval_token }` |
+| 输出 Schema | `{ operation_id, action_type, status, idempotency_key, evidence_ref, error_code, rollback_of }` |
+| 调用条件 | `IntentTriage.requested_action=refund` 且任务已获审批 |
+| 依赖工具 | 初赛 `HttpBusinessActionAdapter` → `enterprise_simulator`；`JsonlBusinessActionAdapter` 保留为离线测试后端；复赛替换为订单/支付系统 Adapter |
+| 失败处理 | 执行失败不发送成功通知；核验失败触发补偿回滚，回滚失败升级人工 |
+| 验证方式 | 操作 ID、请求指纹、状态和回滚关联关系校验 |
+| 安全边界 | 未审批、参数缺失、幂等冲突或币种不支持均拒绝执行 |
+| 复用价值 | ERP、订单、支付系统只需替换适配器，Agent/Skill/Trace 接口不变 |
+| 与多 Agent 关系 | ActVerify 在 DutyManager 放行后调用，结果决定通知、回滚和案例终态 |
 
 ---
 

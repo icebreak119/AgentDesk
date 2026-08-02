@@ -16,10 +16,10 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_registry_has_seven_skills():
+def test_registry_has_eight_skills():
     data = yaml.safe_load((ROOT / "registry.yaml").read_text(encoding="utf-8"))
     skills = data["skills"]
-    assert len(skills) == 7
+    assert len(skills) == 8
     for name in (
         "session_normalize",
         "intent_triage",
@@ -28,6 +28,7 @@ def test_registry_has_seven_skills():
         "outcome_verify",
         "customer_confirm",
         "case_digest",
+        "business_action",
     ):
         assert name in skills
         meta = skills[name]
@@ -138,6 +139,24 @@ def test_customer_confirm_and_case_digest_are_privacy_safe():
     assert "收到" not in record["knowledge_snippet"]
 
 
+def test_business_action_rejects_invalid_refund_request():
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    path = ROOT / "business_action" / "v0.1" / "skill.py"
+    spec = spec_from_file_location("business_action", path)
+    module = module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    valid = _load_json(ROOT / "business_action" / "v0.1" / "examples" / "refund.json")
+    assert module.run(valid)["status"] == "ready"
+    with pytest.raises(ValueError):
+        module.run({**valid, "order_id": ""})
+    with pytest.raises(ValueError):
+        module.run({**valid, "amount": "-1.00"})
+    with pytest.raises(ValueError):
+        module.run({**valid, "currency": "USD"})
+
+
 @pytest.mark.parametrize(
     ("skill", "example"),
     [
@@ -149,6 +168,7 @@ def test_customer_confirm_and_case_digest_are_privacy_safe():
         ("outcome_verify", "outcome_verify/v0.1/examples/verify_ok.json"),
         ("customer_confirm", "customer_confirm/v0.1/examples/confirmed.json"),
         ("case_digest", "case_digest/v0.1/examples/confirmed_consult.json"),
+        ("business_action", "business_action/v0.1/examples/refund.json"),
     ],
 )
 def test_run_skill_cli(skill: str, example: str):

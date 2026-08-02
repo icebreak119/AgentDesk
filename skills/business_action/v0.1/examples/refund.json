@@ -1,0 +1,11 @@
+{
+  "task_id": "task_refund_demo",
+  "profile_id": "profile_demo",
+  "action_type": "refund",
+  "order_id": "order_demo_001",
+  "amount": "199.00",
+  "currency": "CNY",
+  "reason": "商品售后退款",
+  "idempotency_key": "task_refund_demo:business_action:1",
+  "approval_token": "approval_demo_001"
+}

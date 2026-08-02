@@ -1,13 +1,17 @@
-{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
-{"task_id": "task_002", "agent": "ChannelIngress", "ts": "2026-07-29T23:00:53+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "8bb42d04aae02af4", "output": {"session_id": "0:1:1550776822954327:4345741094434680"}}
-{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-07-29T23:00:53+08:00", "skill": "IntentTriage", "status": "ok", "need_approval": true, "input_hash": "313cdf6d26f91087", "output": {"intent": "refund_or_account_change", "priority": "high"}}
-{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "triaging", "to": "planning"}
-{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-07-29T23:00:53+08:00", "skill": "ReplyPlan", "status": "ok", "input_hash": "d6fef69468c767fa", "output": {"action_type": "escalate"}}
-{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "planning", "to": "suspended"}
-{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-07-29T23:00:53+08:00", "event": "approval_required", "status": "suspended", "output": {"risk_tag": "high"}}
-{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-07-29T23:00:53+08:00", "event": "approval_granted", "status": "ok", "output": {"approval_token": "appr_tok..."}}
-{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "suspended", "to": "acting"}
-{"task_id": "task_002", "agent": "ActVerify", "ts": "2026-07-29T23:00:53+08:00", "skill": "ChannelSend", "status": "ok", "mode": "mock", "input_hash": "5ee51fcd55ea4518", "output": {"send_id": "mock_task_002"}}
-{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "acting", "to": "verifying"}
-{"task_id": "task_002", "agent": "ActVerify", "ts": "2026-07-29T23:00:53+08:00", "skill": "OutcomeVerify", "status": "ok", "output": {"pass": true}}
-{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-07-29T23:00:53+08:00", "event": "state_transition", "from": "verifying", "to": "done"}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:33+08:00", "event": "state_transition", "from": "pending", "to": "triaging"}
+{"task_id": "task_002", "agent": "ChannelIngress", "ts": "2026-08-02T13:12:33+08:00", "skill": "SessionNormalize", "status": "ok", "input_hash": "d26bacf45ccac0e1", "output": {"session_id": "0:1:1550776822954327:4345741094434680", "source_event_id": "dy-demo-refund-001", "canonical_customer_id": "12e193536cd873420898"}}
+{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-08-02T13:12:33+08:00", "skill": "IntentTriage", "status": "ok", "need_approval": true, "input_hash": "5fb78061d7396a3e", "output": {"intent": "refund_or_account_change", "priority": "high"}}
+{"task_id": "task_002", "agent": "CaseLearning", "ts": "2026-08-02T13:12:33+08:00", "skill": "CaseKnowledgeRetrieve", "status": "ok", "output": {"hit_count": 1}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:33+08:00", "event": "state_transition", "from": "triaging", "to": "planning"}
+{"task_id": "task_002", "agent": "TriageGuard", "ts": "2026-08-02T13:12:33+08:00", "skill": "ReplyPlan", "status": "ok", "input_hash": "bd648108323e8985", "output": {"action_type": "escalate", "citation_count": 1}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:33+08:00", "event": "state_transition", "from": "planning", "to": "suspended"}
+{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-08-02T13:12:33+08:00", "event": "approval_required", "status": "suspended", "output": {"risk_tag": "high"}}
+{"task_id": "task_002", "agent": "DutyManager", "ts": "2026-08-02T13:12:33+08:00", "event": "approval_granted", "status": "ok", "output": {"approval_token": "appr_tok..."}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:33+08:00", "event": "state_transition", "from": "suspended", "to": "acting"}
+{"task_id": "task_002", "agent": "ActVerify", "ts": "2026-08-02T13:12:33+08:00", "skill": "ChannelSend", "status": "ok", "mode": "mock", "input_hash": "5ee51fcd55ea4518", "output": {"send_id": "mock_task_002"}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:33+08:00", "event": "state_transition", "from": "acting", "to": "verifying"}
+{"task_id": "task_002", "agent": "ActVerify", "ts": "2026-08-02T13:12:33+08:00", "skill": "OutcomeVerify", "status": "ok", "output": {"pass": true, "evidence_type": "receipt_and_content"}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:33+08:00", "event": "state_transition", "from": "verifying", "to": "confirming"}
+{"task_id": "task_002", "agent": "ActVerify", "ts": "2026-08-02T13:12:33+08:00", "skill": "CustomerConfirm", "status": "confirmed", "output": {"needs_follow_up": false}}
+{"task_id": "task_002", "agent": "SessionTL", "ts": "2026-08-02T13:12:33+08:00", "event": "state_transition", "from": "confirming", "to": "done"}
+{"task_id": "task_002", "agent": "CaseLearning", "ts": "2026-08-02T13:12:33+08:00", "skill": "CaseDigest", "status": "ok", "output": {"case_id": "case_task_002", "resolution": "done", "privacy_checked": true}}

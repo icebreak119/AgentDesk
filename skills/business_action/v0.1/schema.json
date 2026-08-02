@@ -1,0 +1,50 @@
+{
+  "skill": "BusinessAction",
+  "version": "0.1",
+  "input": {
+    "type": "object",
+    "required": [
+      "task_id",
+      "profile_id",
+      "action_type",
+      "order_id",
+      "amount",
+      "currency",
+      "reason",
+      "idempotency_key",
+      "approval_token"
+    ],
+    "properties": {
+      "task_id": { "type": "string" },
+      "profile_id": { "type": "string" },
+      "action_type": { "type": "string", "enum": ["refund"] },
+      "order_id": { "type": "string" },
+      "amount": { "type": ["number", "string"] },
+      "currency": { "type": "string", "enum": ["CNY"] },
+      "reason": { "type": "string" },
+      "idempotency_key": { "type": "string" },
+      "approval_token": { "type": "string" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": [
+      "operation_id",
+      "action_type",
+      "status",
+      "idempotency_key",
+      "evidence_ref",
+      "error_code",
+      "rollback_of"
+    ],
+    "properties": {
+      "operation_id": { "type": "string" },
+      "action_type": { "type": "string" },
+      "status": { "type": "string" },
+      "idempotency_key": { "type": "string" },
+      "evidence_ref": { "type": "string" },
+      "error_code": { "type": "string" },
+      "rollback_of": { "type": "string" }
+    }
+  }
+}

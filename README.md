@@ -7,8 +7,9 @@
 AgentDesk 是面向企业私域运营的多 Agent 客服自治工作台，以 **AgentTeams** 的 Manager–Team Leader–Worker 分层作为协同设计基点。初赛提供可运行参考编排器，验证「接入与去重 → 分级 → 方案 → 执行 → 核验 → 客户确认 → 匿名案例沉淀 → 审批」闭环；完整向量 RAG 仍为复赛项。
 
 - **主渠道**：抖音私信
-- **扩展渠道**：企业微信统一 `SessionEvent` 契约与离线剧本（真实适配器为复赛项）
+- **扩展渠道**：企业微信本地 Webhook 适配器（`8771`，统一 `SessionEvent`；生产验签与队列属于复赛）
 - **协同框架**：AgentTeams 分层映射（官方运行时为复赛项）
+- **企业动作**：BusinessAction 退款 Skill + 独立 HTTP 企业业务模拟器（`8770`；真实 ERP/支付系统为复赛）
 
 ## 初赛材料（docs/）
 
@@ -32,16 +33,17 @@ AgentDesk 是面向企业私域运营的多 Agent 客服自治工作台，以 **
 
 ## 重要说明
 
-- **Demo 录屏来源**：AgentDesk 抖音 Channel Runtime（`8765/console`）
+- **Demo 录屏来源**：`demo_runtime` 实时编排页（`8780`），实际调用 `8770` 企业动作 API 和 `8771` 企微 Webhook
 - 本提交不依赖其他本地项目、历史桌面宿主或其端口
-- **Trace 工作台 / 生产 Task DB / 完整 RAG**：复赛实现项；初赛已提供参考编排、Trace JSONL、客户确认和匿名 CaseDigest
+- **Trace 工作台 / 生产 Task DB / 完整 RAG**：复赛实现项；初赛已提供实时演示页、Trace JSONL、客户确认、HTTP 退款动作核验/回滚和匿名 CaseDigest
 
 ## 当前进展
 
 - ✅ 初赛方案设计与 AgentTeams 映射
 - ✅ 抖音 Channel Runtime 源码（`runtime/douyin/`，可独立启动 8765）
-- ✅ 6 Agent、7 Skill、剧本 A/B/C（含跨渠道去重、客户确认和案例复用）
-- 🔄 企业微信真实适配、AgentTeams 官方运行时、完整 RAG（复赛）
+- ✅ 6 Agent、8 Skill、剧本 A/B/C（含审批、HTTP 退款执行/核验/回滚、跨渠道去重和案例复用）
+- ✅ 本地企业微信 Webhook、独立企业业务 HTTP 模拟器、实时编排演示页
+- 🔄 企业微信生产验签/队列、AgentTeams 官方运行时、完整 RAG（复赛）
 
 ## Runtime 源码
 

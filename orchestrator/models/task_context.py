@@ -16,6 +16,7 @@ class TaskContext:
     session_event: dict[str, Any] | None = None
     triage_result: dict[str, Any] | None = None
     reply_draft: dict[str, Any] | None = None
+    business_action: dict[str, Any] | None = None
     send_receipt: dict[str, Any] | None = None
     verify_result: dict[str, Any] | None = None
     dedupe_result: dict[str, Any] | None = None
@@ -44,6 +45,7 @@ class TaskContext:
             session_event=data.get("session_event"),
             triage_result=data.get("triage_result"),
             reply_draft=data.get("reply_draft"),
+            business_action=data.get("business_action"),
             send_receipt=data.get("send_receipt"),
             verify_result=data.get("verify_result"),
             dedupe_result=data.get("dedupe_result"),

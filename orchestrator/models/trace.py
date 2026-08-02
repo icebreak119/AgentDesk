@@ -6,7 +6,7 @@ import hashlib
 import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Any, TextIO
+from typing import Any, Callable, TextIO
 
 
 def _now_iso() -> str:
@@ -20,10 +20,16 @@ def input_hash(payload: Any) -> str:
 
 
 class TraceWriter:
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self,
+        path: Path,
+        *,
+        on_event: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._fh: TextIO | None = None
+        self.on_event = on_event
 
     def __enter__(self) -> TraceWriter:
         self._fh = self.path.open("w", encoding="utf-8")
@@ -46,6 +52,12 @@ class TraceWriter:
             raise RuntimeError("TraceWriter 未打开，请使用 with 语句")
         self._fh.write(line + "\n")
         self._fh.flush()
+        if self.on_event is not None:
+            try:
+                self.on_event(event)
+            except Exception:
+                # Observability subscribers must not alter task execution.
+                pass
         return event
 
     def read_lines(self) -> list[dict[str, Any]]:

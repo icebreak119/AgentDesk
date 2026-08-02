@@ -26,6 +26,7 @@ def run(payload: dict[str, Any]) -> dict[str, Any]:
             "need_approval": True,
             "confidence": round(confidence, 2),
             "rule_hits": high_hits,
+            "requested_action": "refund" if "退款" in content else "",
         }
 
     consult_hits = _collect_hits(content, CONSULT_KEYWORDS)
@@ -38,6 +39,7 @@ def run(payload: dict[str, Any]) -> dict[str, Any]:
             "need_approval": False,
             "confidence": round(confidence, 2),
             "rule_hits": consult_hits,
+            "requested_action": "",
         }
 
     return {
@@ -47,4 +49,5 @@ def run(payload: dict[str, Any]) -> dict[str, Any]:
         "need_approval": False,
         "confidence": 0.35,
         "rule_hits": [],
+        "requested_action": "",
     }

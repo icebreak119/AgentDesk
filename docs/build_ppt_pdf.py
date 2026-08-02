@@ -393,8 +393,8 @@ def phase_boundary(c: canvas.Canvas) -> None:
     for y, item in zip((292, 267, 242, 217, 192), (
         "抖音 Channel Runtime 可独立启动",
         "6 个 Agent Identity + 参考编排器",
-        "7 个 Skill + JSON Schema",
-        "JSONL Trace + A/B/C 剧本",
+        "8 个 Skill + Schema + HTTP BusinessAction",
+        "实时 Trace + A/B/C 剧本",
         "Web Console 创建并查看本机登录 Job",
     )):
         c.setFillColor(INK)
@@ -409,7 +409,7 @@ def phase_boundary(c: canvas.Canvas) -> None:
     c.setFont(FONT_BOLD, 21)
     c.drawString(455, 327, "已设计，复赛继续实现")
     for y, item in zip((292, 267, 242, 217, 192), (
-        "企业微信真实渠道适配器",
+        "企微生产验签 / 重试队列",
         "官方 AgentTeams Runtime 接入",
         "知识库 RAG / 长期记忆",
         "生产 Task DB 与 Trace Web UI",
@@ -516,17 +516,18 @@ def architecture(c: canvas.Canvas) -> None:
 
 
 def lifecycle(c: canvas.Canvas) -> None:
-    dark_header(c, 6, "05 / Controlled Lifecycle", "会话进入的不是聊天窗口，而是一台状态机。", "低风险任务直达执行；高风险任务只在持有 ApprovalToken 后才允许继续。")
+    dark_header(c, 6, "05 / Controlled Lifecycle", "会话进入的不是聊天窗口，而是一台状态机。", "低风险任务直达执行；高风险任务必须经过 ApprovalToken、企业动作核验和通知闸门。")
     states = (
         ("01", "接入/去重", MINT),
         ("02", "分级", CYAN),
         ("03", "规划", GOLD),
-        ("04", "执行", MINT),
-        ("05", "核验", CYAN),
-        ("06", "确认", GOLD),
-        ("07", "归档/完成", CORAL),
+        ("04", "审批", CORAL),
+        ("05", "企业动作", MINT),
+        ("06", "动作核验", CYAN),
+        ("07", "通知/确认", GOLD),
+        ("08", "归档/完成", CORAL),
     )
-    x0, y, w, gap = 48, 277, 94, 12
+    x0, y, w, gap = 48, 277, 82, 10
     for index, (num, label, color) in enumerate(states):
         x = x0 + index * (w + gap)
         rounded(c, x, y, w, 58, fill=INK_SOFT, stroke=color, radius=9, line_width=1.2)
@@ -539,7 +540,7 @@ def lifecycle(c: canvas.Canvas) -> None:
         if index < len(states) - 1:
             arrow(c, x + w + 4, y + 29, x + w + gap - 4, y + 29, colors.HexColor("#7B8A8D"), 1.15)
     # Approval gate is drawn as a separate branch, so the exception reads as a policy decision.
-    approval_x = x0 + 2 * (w + gap)
+    approval_x = x0 + 3 * (w + gap)
     rounded(c, approval_x, 176, 97, 52, fill=CORAL, radius=8)
     c.setFillColor(INK)
     c.setFont(MONO, 7.8)
@@ -580,11 +581,11 @@ def two_paths(c: canvas.Canvas) -> None:
     c.drawString(440, 375, "B / HIGH RISK / APPROVAL GATE")
     c.setFillColor(INK)
     c.setFont(FONT_BOLD, 14)
-    c.drawString(440, 351, "退款 / 改账户: 获批后发送通知，拒绝后不发送")
+    c.drawString(440, 351, "退款 / 改账户: 审批 → 企业动作 → 核验 → 通知")
     if VERIFY_TRACE.exists():
-        screen(c, VERIFY_TRACE, 48, 126, 342, 211, "TRACE / Script A / OutcomeVerify", MINT)
+        screen(c, VERIFY_TRACE, 48, 126, 342, 211, "TRACE / Script B / Rollback", MINT)
     if APPROVAL_TRACE.exists():
-        screen(c, APPROVAL_TRACE, 452, 126, 342, 211, "TRACE / Script B / Approval", CORAL)
+        screen(c, APPROVAL_TRACE, 452, 126, 342, 211, "TRACE / Script B / Success", CORAL)
     rounded(c, 48, 56, 746, 52, fill=INK_SOFT, radius=8)
     c.setFillColor(CYAN)
     c.setFont(MONO, 8.6)
@@ -596,7 +597,7 @@ def skills(c: canvas.Canvas) -> None:
     dark_header(c, 8, "07 / Reusable Skills", "Skill 是可审查的能力，不是一次性提示词。", "每个 Skill 都有输入输出 Schema、调用条件、依赖工具、失败路径和安全边界。")
     c.setFillColor(colors.HexColor("#26343B"))
     c.setFont(FONT_BOLD, 72)
-    c.drawString(48, 277, "7")
+    c.drawString(48, 277, "8")
     c.setFillColor(WARM_WHITE)
     c.setFont(FONT_BOLD, 20)
     c.drawString(121, 303, "可复用 Skill")
@@ -608,13 +609,14 @@ def skills(c: canvas.Canvas) -> None:
         ("01", "SessionNormalize", "会话归一 / 跨渠道去重键", MINT),
         ("02", "IntentTriage", "意图识别 / 风险分级", CYAN),
         ("03", "ReplyPlan", "知识注入 / 处置草案", GOLD),
-        ("04", "ChannelSend", "幂等发送 / 防串号", CORAL),
-        ("05", "OutcomeVerify", "回执与内容核验", MINT),
-        ("06", "CustomerConfirm", "确认 / 待跟进 / 升级", CYAN),
-        ("07", "CaseDigest", "匿名归档 / 标签复用", GOLD),
+        ("04", "BusinessAction", "审批后调用 HTTP 退款企业动作", CORAL),
+        ("05", "ChannelSend", "幂等发送 / 防串号", MINT),
+        ("06", "OutcomeVerify", "回执与内容核验", CYAN),
+        ("07", "CustomerConfirm", "确认 / 待跟进 / 升级", GOLD),
+        ("08", "CaseDigest", "匿名归档 / 标签复用", CORAL),
     )
     for index, (num, name, note, color) in enumerate(specs):
-        y = 350 - index * 40
+        y = 350 - index * 34
         rounded(c, 248, y - 18, 546, 31, fill=INK_SOFT, stroke=INK_LINE, radius=6, line_width=0.8)
         c.setFillColor(color)
         c.rect(248, y - 18, 7, 31, fill=1, stroke=0)
@@ -665,7 +667,7 @@ def security_evidence(c: canvas.Canvas) -> None:
     pillars = (
         ("01", "身份隔离", "profile_id 贯穿任务、会话和工具调用。\nclient_msg_id 是幂等键，避免重复发送。", MINT),
         ("02", "审批令牌", "高风险任务只生成方案。\nApprovalToken 与 profile scope 绑定。", CORAL),
-        ("03", "核验与沉淀", "回执、内容与客户确认。\nTrace 和匿名 CaseDigest 留证。", CYAN),
+        ("03", "动作闸门", "BusinessAction 核验通过才通知。\n失败先回滚，回滚失败升级人工。", CYAN),
     )
     for index, (num, heading, body, color) in enumerate(pillars):
         x = 48 + index * 150
@@ -703,11 +705,12 @@ def verification(c: canvas.Canvas) -> None:
         "python -m orchestrator.demo.script_a_consult",
         "python -m orchestrator.demo.script_b_approval",
         "python -m orchestrator.demo.script_b_approval --reject",
+        "python -m orchestrator.demo.script_b_approval --inject-verify-failure",
         "python -m orchestrator.demo.script_c_multichannel_case",
         "python skills/run_skill.py intent_triage -i ... --pretty",
     )
     for index, command in enumerate(commands):
-        y = 314 - index * 25
+        y = 314 - index * 22
         c.setFillColor(colors.HexColor("#5E7271"))
         c.setFont(MONO, 8.7)
         c.drawString(316, y, ">")
@@ -715,12 +718,12 @@ def verification(c: canvas.Canvas) -> None:
         c.drawString(333, y, command)
     c.setFillColor(MINT)
     c.setFont(MONO, 8.4)
-    c.drawString(316, 164, "PASSED / TRACE WRITTEN / CONTRACT ASSERTED")
+    c.drawString(316, 156, "PASSED / TRACE WRITTEN / CONTRACT ASSERTED")
 
     small_label(c, 48, 131, "A", "自动闭环", "发送、核验、客户确认与匿名归档后进入 done。", MINT)
-    small_label(c, 286, 131, "B", "审批分支", "批准后执行并核验; 拒绝路径不发送消息。", CORAL)
+    small_label(c, 286, 131, "B", "审批与回滚", "批准后动作核验才通知; 失败先补偿回滚。", CORAL)
     small_label(c, 524, 131, "C", "去重与复用", "跨渠道重复拦截、case:// 命中和再次沉淀。", CYAN)
-    paragraph(c, "验证产物: 56 pytest 断言 | Script A/B/C Trace | Skill CLI 输出 | Schema / 工具契约测试", 48, 73, 746, text_style("verification-evidence", 10.8, 14.5, INK, TA_CENTER, FONT_BOLD))
+    paragraph(c, "验证产物: pytest 断言 | Script A/B/C Trace | 成功/拒绝/回滚路径 | Skill CLI 输出 | Schema / 工具契约测试", 48, 73, 746, text_style("verification-evidence", 10.8, 14.5, INK, TA_CENTER, FONT_BOLD))
 
 
 def open_plan(c: canvas.Canvas) -> None:

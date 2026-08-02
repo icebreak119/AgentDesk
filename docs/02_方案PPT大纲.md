@@ -7,12 +7,12 @@
 | P1 封面 | 私域客服自治工作台（AgentDesk） | 赛道：新智基座｜方向：智能客服自主闭环｜团队名 |
 | P2 背景与痛点 | 为什么需要 Agent Infra | 多渠道分散、回复不可验证、高风险无审批、经验难沉淀；单 Bot 不够 |
 | P3 场景与价值 | 目标用户与收益 | 私域运营/客服团队；提效、降错、可审计、可复制 |
-| P4 总体架构 | AgentTeams 分层架构图 | Manager–TL–Worker；6 Agent；Skill/MCP/渠道 Runtime/案例档案分层 |
+| P4 总体架构 | AgentTeams 分层架构图 | Manager–TL–Worker；6 Agent；Skill/MCP/渠道 Runtime/企业动作/案例档案分层 |
 | P5 Agent 分工 | Agent Identity 一览 | 6 个 Agent 职责、边界、禁止事项（表格） |
 | P6 任务拆解与状态机 | 从入站到闭环 | Task 拆解步骤；SessionTL 状态流转图 |
-| P7 Skill 工程体系 | 7 个核心 Skill | 名称、输入输出、复用价值、失败处理（表格） |
+| P7 Skill 工程体系 | 8 个核心 Skill | 名称、输入输出、复用价值、失败处理（表格） |
 | P8 工具集成 | MCP 等价契约 | send/query/history 工具 Schema；迁移成本说明 |
-| P9 闭环与演示 | 三条剧本 | 主路径 + 高风险审批 + 跨渠道去重/客户确认/案例复用 |
+| P9 闭环与演示 | 三条剧本 | 主路径 + 退款动作审批/核验/回滚 + 跨渠道去重/客户确认 |
 | P10 验证与审计 | 生产级保障 | OutcomeVerify、profile 隔离、审批回滚、证据沉淀 |
 | P11 可观测与上下文 | Trace/Log + 共享状态 | 4 选 2 能力说明；后续 AgentLoop 对接计划 |
 | P12 落地计划与开源 | 初赛→复赛→决赛 | 8.16 方案；复赛 AgentTeams 代码包；开源 Skill/Identity 模板 |
@@ -39,16 +39,18 @@ flowchart TB
         S1[SessionNormalize]
         S2[IntentTriage]
         S3[ReplyPlan]
-        S4[ChannelSend]
-        S5[OutcomeVerify]
-        S6[CustomerConfirm]
-        S7[CaseDigest]
+        S4[BusinessAction]
+        S5[ChannelSend]
+        S6[OutcomeVerify]
+        S7[CustomerConfirm]
+        S8[CaseDigest]
     end
 
     subgraph Tools["工具层 / MCP 等价"]
         T1[抖音 Runtime]
-        T2[企微统一契约 / 离线剧本]
-        T3[知识检索]
+        T2[BusinessAction HTTP 企业模拟器]
+        T3[企微本地 Webhook / SessionEvent]
+        T4[知识检索]
     end
 
     subgraph Evidence["证据与审计"]
@@ -63,10 +65,11 @@ flowchart TB
     TL --> W1 & W2 & W3 & W4
     W1 --> S1
     W2 --> S2 & S3
-    W3 --> S4 & S5 & S6
-    W4 --> S7
-    S4 --> T1
-    S3 --> T3
+    W3 --> S4 & S5 & S6 & S7
+    W4 --> S8
+    S4 --> T2
+    S5 --> T1
+    S3 --> T4
     W3 --> E1
     M --> E2
     W4 --> E3

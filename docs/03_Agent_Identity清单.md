@@ -10,7 +10,7 @@
 | 系统名称 | 私域客服自治工作台（AgentDesk） |
 | 业务场景 | 多渠道私域会话自动接待、分级处置、结果核验与知识沉淀 |
 | 主渠道 | 抖音私信 |
-| 扩展渠道 | 企业微信（初赛统一契约设计，复赛接入适配器） |
+| 扩展渠道 | 企业微信本地 Webhook（初赛可运行适配器；生产验签与队列为复赛） |
 | Agent 数量 | 6（Manager 1 + TL 1 + Worker 4） |
 | 设计基点 | AgentTeams 角色编排、任务拆解、上下文传递、协同执行、状态追踪 |
 
@@ -87,14 +87,14 @@
 | 层级 | Worker |
 | 身份 ID | `agent.act_verify` |
 | 身份定义 | 方案执行、结果核验、执行证据沉淀 |
-| 核心职责 | 调用 ChannelSendSkill、OutcomeVerifySkill、CustomerConfirmSkill；写执行与确认证据 |
+| 核心职责 | 审批后调用 BusinessActionSkill，核验退款动作，再调用 ChannelSend、OutcomeVerify、CustomerConfirm；写执行与确认证据 |
 | 能力边界 | 在审批通过后执行发送；产出 verify evidence |
 | 禁止事项 | 未审批不得执行高风险动作 |
-| 输入 | ReplyDraft、ApprovalToken、channel_ref |
-| 输出 | SendReceipt、VerifyResult、CustomerConfirmResult、EvidenceBundle |
+| 输入 | ReplyDraft、ApprovalToken、BusinessActionRequest、channel_ref |
+| 输出 | BusinessActionReceipt、SendReceipt、VerifyResult、CustomerConfirmResult、EvidenceBundle |
 | 协作对象 | SessionTL |
 | 安全边界 | 短文本必须 DOM/回执二次校验；失败不入库为成功 |
-| 失败策略 | 发送失败有限重试；核验失败标记 failed 并告警 |
+| 失败策略 | 业务动作核验失败先补偿回滚；回滚失败升级人工；通知发送失败标记 failed |
 
 ### 2.6 CaseLearning（案例学习 Worker）
 
@@ -118,7 +118,7 @@
 |---|---|---|
 | Manager 全局监管与拆解 | DutyManager | TaskPlan、审批记录 |
 | Team Leader 团队调度 | SessionTL | TaskContext、状态流转日志 |
-| Worker 执行单元 | ChannelIngress / TriageGuard / ActVerify / CaseLearning | Skill 调用结果、CaseDigest |
+| Worker 执行单元 | ChannelIngress / TriageGuard / ActVerify / CaseLearning | Skill 调用结果、BusinessAction、CaseDigest |
 | 任务拆解 | DutyManager → SessionTL 状态机 | task_id 维度 Trace |
 | 上下文传递 | TaskContext 共享对象 | 中间结论 JSON |
 | 协同执行 | SessionTL 按状态调度 Worker | agent/skill/tool 链路日志 |

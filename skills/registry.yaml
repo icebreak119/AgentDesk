@@ -86,3 +86,15 @@ skills:
       - agent.case_learning
     implementation: 脱敏案例复盘、标签化归档与历史案例检索
     runnable: true
+
+  business_action:
+    display_name: BusinessAction
+    version: "0.1"
+    entrypoint: business_action/v0.1/skill.py
+    schema: business_action/v0.1/schema.json
+    examples:
+      - business_action/v0.1/examples/refund.json
+    caller_agents:
+      - agent.act_verify
+    implementation: 企业退款动作请求校验；可切换独立 HTTP 企业业务模拟器或 JSONL 离线适配器
+    runnable: true

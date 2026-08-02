@@ -302,18 +302,22 @@ def build() -> None:
             "高风险审批闭环",
             "退款 / 账户变更先进入 suspended，批准后才允许执行与核验。",
             approval_events,
-            "审批证据：approval_required -> approval_granted -> ChannelSend -> OutcomeVerify。",
+            "成功证据：approval_required -> approval_granted -> business_action_executed -> business_action_verified -> customer_notification_sent。",
         ),
         OUT / SCREENSHOTS[3],
     )
 
-    execution_events = run_trace("orchestrator.demo.script_a_consult", "_execution_trace.jsonl")
+    execution_events = run_trace(
+        "orchestrator.demo.script_b_approval",
+        "_rollback_trace.jsonl",
+        "--inject-verify-failure",
+    )
     render_html_screenshot(
         trace_html(
-            "低风险执行与结果核验",
-            "普通咨询只发送一次；核验通过后继续等待或收集客户确认。",
+            "退款核验失败与补偿回滚",
+            "企业动作核验失败时先回滚，不向客户发送“退款成功”通知。",
             execution_events,
-            "核验证据：仅 1 次 ChannelSend、1 次 OutcomeVerify 和 1 次 CustomerConfirm，最终状态为 done。",
+            "回滚证据：business_action_verified=failed -> business_action_rollback_started -> business_action_rollback_verified；Trace 保留 rollback_of，未出现 customer_notification_sent。",
         ),
         OUT / SCREENSHOTS[4],
     )

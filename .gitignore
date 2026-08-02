@@ -13,3 +13,9 @@ runtime/douyin/channels/douyin_all_user/reverse_runtime/.env*
 __pycache__/
 *.pyc
 .venv/
+
+# Local demo recordings, evidence, and temporary submission packages
+tmp/
+
+# Demo entrypoints write these files beside the selected Trace output
+orchestrator/output/business_actions.jsonl

@@ -61,7 +61,10 @@ EXTRA_DIRS = [
     REPO_ROOT / "docs" / "07_系统截图",
     REPO_ROOT / "skills",
     REPO_ROOT / "orchestrator",
+    REPO_ROOT / "enterprise_simulator",
+    REPO_ROOT / "demo_runtime",
     RUNTIME,
+    REPO_ROOT / "runtime" / "wecom",
 ]
 
 

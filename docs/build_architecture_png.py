@@ -80,13 +80,14 @@ def build() -> None:
     box(ax, 11.2, 5.05, 3.8, 0.65, "ActVerify\n执行核验", "#E0F2FE")
 
     band(ax, 3.35, 0.95, "Skill 能力层", "#14B8A6")
-    for i, name in enumerate(["SessionNormalize", "IntentTriage", "ReplyPlan", "ChannelSend", "OutcomeVerify"]):
-        box(ax, 0.8 + i * 3.0, 3.95, 2.5, 0.45, name, "#CCFBF1", fontsize=9)
+    for i, name in enumerate(["SessionNormalize", "IntentTriage", "ReplyPlan", "BusinessAction", "ChannelSend", "OutcomeVerify", "CustomerConfirm", "CaseDigest"]):
+        box(ax, 0.55 + i * 1.9, 3.95, 1.55, 0.45, name, "#CCFBF1", fontsize=7.2)
 
     band(ax, 2.55, 0.95, "工具层 / MCP 等价契约", "#94A3B8")
     box(ax, 1.5, 2.95, 3.8, 0.45, "抖音 Runtime", "#F1F5F9")
-    box(ax, 6.1, 2.95, 3.8, 0.45, "企微 Hook API", "#F1F5F9")
-    box(ax, 10.7, 2.95, 3.8, 0.45, "知识检索", "#F1F5F9")
+    box(ax, 5.3, 2.95, 3.8, 0.45, "BusinessAction HTTP 8770", "#F1F5F9", fontsize=8)
+    box(ax, 9.6, 2.95, 2.5, 0.45, "企微 Webhook 8771", "#F1F5F9", fontsize=8)
+    box(ax, 12.5, 2.95, 2.5, 0.45, "知识检索", "#F1F5F9", fontsize=8)
 
     band(ax, 1.45, 0.95, "证据与审计", "#F59E0B")
     box(ax, 1.5, 1.05, 3.8, 0.45, "Trace / Log", "#FEF3C7")

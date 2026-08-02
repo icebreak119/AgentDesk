@@ -49,6 +49,7 @@ python -m orchestrator.demo.script_a_consult --live --base-url http://127.0.0.1:
 {"task_id":"task_001","agent":"SessionTL","event":"state_transition","from":"triaging","to":"planning"}
 {"task_id":"task_001","agent":"ActVerify","skill":"ChannelSend","status":"ok","mode":"mock"}
 {"task_id":"task_001","agent":"ActVerify","skill":"OutcomeVerify","status":"ok"}
+{"task_id":"task_002","agent":"ActVerify","event":"business_action_verified","status":"ok","operation_id":"op_demo_001","evidence_ref":"action://op_demo_001"}
 ```
 
 ## 答辩口径
